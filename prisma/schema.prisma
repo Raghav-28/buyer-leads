@@ -7,9 +7,88 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
-  name      String?
-  createdAt DateTime @default(now())
+model Buyer {
+  id           String   @id @default(uuid())
+  fullName     String   @db.VarChar(80)
+  email        String?  @db.VarChar(255)
+  phone        String   @db.VarChar(15)
+  city         City
+  propertyType PropertyType
+  bhk          BHK?
+  purpose      Purpose
+  budgetMin    Int?
+  budgetMax    Int?
+  timeline     Timeline
+  source       Source
+  status       Status   @default(New)
+  notes        String?  @db.VarChar(1000)
+  tags         String[]
+  ownerId      String
+  updatedAt    DateTime @updatedAt
+
+  history      BuyerHistory[]
+}
+
+model BuyerHistory {
+  id        String   @id @default(uuid())
+  buyerId   String
+  changedBy String
+  changedAt DateTime @default(now())
+  diff      Json
+
+  buyer     Buyer    @relation(fields: [buyerId], references: [id])
+}
+
+enum City {
+  Chandigarh
+  Mohali
+  Zirakpur
+  Panchkula
+  Other
+}
+
+enum PropertyType {
+  Apartment
+  Villa
+  Plot
+  Office
+  Retail
+}
+
+enum BHK {
+  Studio
+  One
+  Two
+  Three
+  Four
+}
+
+enum Purpose {
+  Buy
+  Rent
+}
+
+enum Timeline {
+  M0_3m
+  M3_6m
+  MoreThan6m
+  Exploring
+}
+
+enum Source {
+  Website
+  Referral
+  Walk_in
+  Call
+  Other
+}
+
+enum Status {
+  New
+  Qualified
+  Contacted
+  Visited
+  Negotiation
+  Converted
+  Dropped
 }
