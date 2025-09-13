@@ -1,6 +1,22 @@
 import { NextResponse } from "next/server";
 import {prisma} from "@/lib/prisma";
 
+export async function GET(
+  req: Request,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const buyerId = params.id;
+    const buyer = await prisma.buyer.findUnique({ where: { id: buyerId } });
+    if (!buyer) {
+      return NextResponse.json({ error: "Buyer not found" }, { status: 404 });
+    }
+    return NextResponse.json(buyer);
+  } catch (error) {
+    console.error("GET error:", error);
+    return NextResponse.json({ error: "Error fetching buyer" }, { status: 500 });
+  }
+}
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
   try {
     const buyerId = params.id;
