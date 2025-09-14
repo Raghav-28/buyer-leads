@@ -1,13 +1,22 @@
 import { NextResponse } from "next/server";
-import {prisma} from "@/lib/prisma";
+import { prisma } from "@/lib/prisma";
+import { buyerSchema } from "@/lib/validations/buyer";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 
+
+// ✅ GET buyer by ID
 export async function GET(
   req: Request,
   { params }: { params: { id: string } }
 ) {
+  const session = await getServerSession(authOptions);
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
-    const buyerId = params.id;
-    const buyer = await prisma.buyer.findUnique({ where: { id: buyerId } });
+    const buyer = await prisma.buyer.findUnique({ where: { id: params.id } });
     if (!buyer) {
       return NextResponse.json({ error: "Buyer not found" }, { status: 404 });
     }
@@ -17,51 +26,72 @@ export async function GET(
     return NextResponse.json({ error: "Error fetching buyer" }, { status: 500 });
   }
 }
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+
+// PATCH buyer by ID
+export async function PATCH(
+  req: Request,
+  { params }: { params: { id: string } }
+) {
+  const session = await getServerSession(authOptions);
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
-    const buyerId = params.id;
-    const data = await req.json();
+    const body = await req.json();
+
+    // Validate input with Zod (partial update allowed)
+    const parsed = buyerSchema.partial().parse(body);
 
     // Fetch old buyer
-    const oldBuyer = await prisma.buyer.findUnique({ where: { id: buyerId } });
+    const oldBuyer = await prisma.buyer.findUnique({ where: { id: params.id } });
     if (!oldBuyer) {
       return NextResponse.json({ error: "Buyer not found" }, { status: 404 });
     }
 
+    // Ownership check
+    if (oldBuyer.ownerId !== session.user.id) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
     // Update buyer
     const updatedBuyer = await prisma.buyer.update({
-      where: { id: buyerId },
-      data,
+      where: { id: params.id },
+      data: parsed, // Prisma will auto-update updatedAt
     });
 
-    // Build diff JSON (only changed fields)
+    // Build diff JSON
     const diff: Record<string, { old: any; new: any }> = {};
-    for (const key of Object.keys(data)) {
+    for (const key of Object.keys(parsed)) {
       const oldValue = oldBuyer[key as keyof typeof oldBuyer];
-      const newValue = data[key];
-
+      const newValue = parsed[key as keyof typeof parsed];
       if (oldValue !== newValue) {
-        diff[key] = {
-          old: oldValue,
-          new: newValue,
-        };
+        diff[key] = { old: oldValue, new: newValue };
       }
     }
 
-    // Save history only if there are changes
+    // Save history only if changes exist
     if (Object.keys(diff).length > 0) {
       await prisma.buyerHistory.create({
         data: {
-          buyerId,
-          changedBy: "system", // 🔹 replace with logged-in user ID when you add NextAuth
+          buyerId: params.id,
+          changedBy: session.user.id, // record logged-in user
           diff,
         },
       });
     }
 
     return NextResponse.json(updatedBuyer);
-  } catch (error) {
+  } catch (error: any) {
     console.error("PATCH error:", error);
+
+    if (error.name === "ZodError") {
+      return NextResponse.json(
+        { error: "Validation failed", details: error.errors },
+        { status: 400 }
+      );
+    }
+
     return NextResponse.json({ error: "Error updating buyer" }, { status: 500 });
   }
 }
