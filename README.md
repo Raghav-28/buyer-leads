@@ -1,6 +1,6 @@
 ﻿# Mini Buyer - Real Estate Lead Management System
 <div align="center">
-  <img src="/minibuyerapp.png" alt="Mini Buyer App Screenshot" width="800" />
+  <img src="public/minibuyerapp.png" alt="Mini Buyer App Screenshot" width="800" />
 </div>
 
 A Next.js application for managing real estate buyer leads with authentication, validation, and accessibility features.
