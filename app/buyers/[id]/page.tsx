@@ -28,29 +28,25 @@ type Buyer = {
   history?: HistoryItem[];
 };
 
-
 export default function BuyerDetailPage() {
   const params = useParams();
   const buyerId = params.id;
 
   const [buyer, setBuyer] = useState<Buyer | null>(null);
   const [loading, setLoading] = useState(true);
-  const [form, setForm] = useState({ fullName: "", notes: "" });
+  const [form, setForm] = useState({ fullName: "", notes: "", status: "" });
   const [message, setMessage] = useState("");
-const [history, setHistory] = useState([]);
-
-useEffect(() => {
-  if (!buyer) return; // only fetch when buyer exists
-  fetch(`/api/buyers/${buyer.id}/history`)
-    .then(res => res.json())
-    .then(setHistory)
-    .catch(console.error);
-}, [buyer]);
-
+  const [history, setHistory] = useState<HistoryItem[]>([]);
 
   useEffect(() => {
     fetchBuyer();
   }, [buyerId]);
+
+  useEffect(() => {
+    if (!buyer) return;
+    setForm({ fullName: buyer.fullName, notes: buyer.notes || "", status: buyer.status });
+    fetchHistory();
+  }, [buyer]);
 
   const fetchBuyer = async () => {
     setLoading(true);
@@ -58,11 +54,20 @@ useEffect(() => {
       const res = await fetch(`/api/buyers/${buyerId}`);
       const data = await res.json();
       setBuyer(data);
-      setForm({ fullName: data.fullName, notes: data.notes || "" });
     } catch (err) {
       console.error(err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchHistory = async () => {
+    try {
+      const res = await fetch(`/api/buyers/${buyerId}/history`);
+      const data = await res.json();
+      setHistory(data || []);
+    } catch (err) {
+      console.error(err);
     }
   };
 
@@ -76,7 +81,9 @@ useEffect(() => {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to update");
       setBuyer(data);
-      setMessage("Updated successfully!");
+      setMessage("Buyer updated successfully!");
+      fetchHistory(); // refresh history
+      setTimeout(() => setMessage(""), 3000);
     } catch (err: any) {
       console.error(err);
       setMessage(err.message);
@@ -87,54 +94,73 @@ useEffect(() => {
   if (!buyer) return <p>Buyer not found</p>;
 
   return (
-   <div>
-  <h1>Buyer Details</h1>
-  <p><strong>ID:</strong> {buyer.id}</p>
-  <p><strong>Email:</strong> {buyer.email}</p>
-  <p><strong>Phone:</strong> {buyer.phone}</p>
-  <p><strong>City:</strong> {buyer.city}</p>
-  <p><strong>Property:</strong> {buyer.propertyType}</p>
-  <p><strong>BHK:</strong> {buyer.bhk}</p>
-  <p><strong>Budget:</strong> {buyer.budgetMin} - {buyer.budgetMax}</p>
-  <p><strong>Timeline:</strong> {buyer.timeline}</p>
-  <p><strong>Status:</strong> {buyer.status}</p>
-  <p><strong>Updated At:</strong> {new Date(buyer.updatedAt).toLocaleString()}</p>
+    <div style={{ maxWidth: "700px", margin: "auto", padding: "16px", fontFamily: "sans-serif" }}>
+      <h1>Buyer Details</h1>
 
-  <h2>Edit Buyer</h2>
-  <div>
-    <label>
-      Full Name:
-      <input
-        type="text"
-        value={form.fullName}
-        onChange={(e) => setForm({ ...form, fullName: e.target.value })}
-      />
-    </label>
-  </div>
-  <div>
-    <label>
-      Notes:
-      <textarea
-        value={form.notes}
-        onChange={(e) => setForm({ ...form, notes: e.target.value })}
-      />
-    </label>
-  </div>
-  <button onClick={handleUpdate}>Update</button>
-  {message && <p>{message}</p>}
+      <div style={{ marginBottom: "24px", padding: "12px", border: "1px solid #ddd", borderRadius: "6px" }}>
+        <p><strong>ID:</strong> {buyer.id}</p>
+        <p><strong>Email:</strong> {buyer.email}</p>
+        <p><strong>Phone:</strong> {buyer.phone}</p>
+        <p><strong>City:</strong> {buyer.city}</p>
+        <p><strong>Property:</strong> {buyer.propertyType}</p>
+        <p><strong>BHK:</strong> {buyer.bhk}</p>
+        <p><strong>Budget:</strong> {buyer.budgetMin} - {buyer.budgetMax}</p>
+        <p><strong>Timeline:</strong> {buyer.timeline}</p>
+        <p><strong>Status:</strong> {buyer.status}</p>
+        <p><strong>Updated At:</strong> {new Date(buyer.updatedAt).toLocaleString()}</p>
+      </div>
 
- <h2>Recent Changes</h2>
-<div>
-  {history.length === 0 && <p>No changes yet</p>}
-  {history.map((h) => (
-    <div key={h.id} style={{ border: '1px solid #ccc', marginBottom: '8px', padding: '4px' }}>
-      <p><strong>Changed by:</strong> {h.changedBy} | <strong>At:</strong> {new Date(h.changedAt).toLocaleString()}</p>
-      <pre>{JSON.stringify(h.diff, null, 2)}</pre>
+      <h2>Edit Buyer</h2>
+      <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginBottom: "16px" }}>
+        <input
+          type="text"
+          placeholder="Full Name"
+          value={form.fullName}
+          onChange={(e) => setForm({ ...form, fullName: e.target.value })}
+          style={{ padding: "8px", borderRadius: "4px", border: "1px solid #ccc" }}
+        />
+        <textarea
+          placeholder="Notes"
+          value={form.notes}
+          onChange={(e) => setForm({ ...form, notes: e.target.value })}
+          style={{ padding: "8px", borderRadius: "4px", border: "1px solid #ccc" }}
+        />
+        <select
+          value={form.status}
+          onChange={(e) => setForm({ ...form, status: e.target.value })}
+          style={{ padding: "8px", borderRadius: "4px", border: "1px solid #ccc" }}
+        >
+          <option value="New">New</option>
+          <option value="Qualified">Qualified</option>
+          <option value="Contacted">Contacted</option>
+          <option value="Visited">Visited</option>
+          <option value="Negotiation">Negotiation</option>
+          <option value="Converted">Converted</option>
+          <option value="Dropped">Dropped</option>
+        </select>
+        <button
+          onClick={handleUpdate}
+          style={{ padding: "10px", borderRadius: "4px", backgroundColor: "#0070f3", color: "#fff", cursor: "pointer", border: "none" }}
+        >
+          Update
+        </button>
+        {message && <p style={{ color: "green" }}>{message}</p>}
+      </div>
+
+      <h2>Recent Changes</h2>
+      {history.length === 0 && <p>No changes yet</p>}
+      {history.map((h) => (
+        <div key={h.id} style={{ border: "1px solid #ccc", marginBottom: "8px", padding: "8px", borderRadius: "4px" }}>
+          <p><strong>Changed by:</strong> {h.changedBy} | <strong>At:</strong> {new Date(h.changedAt).toLocaleString()}</p>
+          <ul>
+            {Object.entries(h.diff).map(([field, change]) => (
+              <li key={field}>
+                <strong>{field}:</strong> {change.old} → {change.new}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
     </div>
-  ))}
-</div>
-
-</div>
-
   );
 }
