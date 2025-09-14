@@ -147,9 +147,7 @@ function LoginPageContent() {
         borderRadius: "4px",
         fontSize: "14px"
       }}>
-        <h3>Demo Credentials:</h3>
-        <p><strong>Admin:</strong> admin@example.com / admin123</p>
-        <p><strong>User:</strong> user@example.com / user123</p>
+        
       </div>
     </div>
   );

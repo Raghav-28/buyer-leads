@@ -45,6 +45,22 @@ npm run dev
 4. **Open the application:**
 Visit [http://localhost:3000](http://localhost:3000)
 
+### Demo Credentials
+
+For testing purposes, you can use these pre-configured accounts:
+
+**Admin Account:**
+- Email: `admin@example.com`
+- Password: `admin123`
+- Access: Full system access, can manage all buyer records
+
+**User Account:**
+- Email: `user@example.com`
+- Password: `user123`
+- Access: Standard user access, can manage own buyer records
+
+> **Note:** These are demo credentials for testing. In production, ensure proper user registration and password security.
+
 ### Available Scripts
 
 - `npm run dev` - Start development server with Turbopack
