@@ -6,7 +6,7 @@ import { useSession, signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import BuyerCSVImport from "@/components/BuyerCSVImport";
 import { useDebounce } from "@/hooks/useDebounce";
-
+import BuyersErrorBoundary from "@/components/BuyersErrorBoundary";
 type Buyer = {
   id: string;
   fullName: string;
@@ -292,6 +292,7 @@ export default function BuyersPage() {
   };
 
   return (
+    <BuyersErrorBoundary>
     <div style={{ 
       minHeight: "100vh", 
       background: "#f8f9fa",
@@ -886,5 +887,6 @@ export default function BuyersPage() {
         </div>
       )}
     </div>
+    </BuyersErrorBoundary>
   );
 }

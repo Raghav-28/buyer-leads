@@ -2,7 +2,7 @@ import "./globals.css";
 import { Inter } from "next/font/google";
 import ClientSessionProvider from "@/components/SessionProvider";
 import Header from "@/components/Header";
-
+import ErrorBoundary from "@/components/ErrorBoundary";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata = {
@@ -18,10 +18,12 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
+        <ErrorBoundary>
         <ClientSessionProvider>
           <Header />
           <main style={{ padding: "16px" }}>{children}</main>
         </ClientSessionProvider>
+        </ErrorBoundary>
       </body>
     </html>
   );
