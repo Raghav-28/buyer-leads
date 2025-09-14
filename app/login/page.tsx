@@ -1,11 +1,27 @@
 "use client";
 
 import { signIn } from "next-auth/react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 
-export default function LoginPage() {
+// Loading component for Suspense
+function LoginPageLoading() {
+  return (
+    <div style={{ 
+      display: "flex", 
+      justifyContent: "center", 
+      alignItems: "center", 
+      height: "50vh",
+      fontSize: "18px"
+    }}>
+      Loading login page...
+    </div>
+  );
+}
+
+// Main content component that uses useSearchParams
+function LoginPageContent() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -116,7 +132,7 @@ export default function LoginPage() {
 
       <div style={{ marginTop: "20px", textAlign: "center" }}>
         <p>
-          Don't have an account?{" "}
+          Don&apos;t have an account?{" "}
           <Link href="/signup" style={{ color: "#0070f3" }}>
             Sign up here
           </Link>
@@ -136,5 +152,14 @@ export default function LoginPage() {
         <p><strong>User:</strong> user@example.com / user123</p>
       </div>
     </div>
+  );
+}
+
+// Main component with Suspense boundary
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<LoginPageLoading />}>
+      <LoginPageContent />
+    </Suspense>
   );
 }
