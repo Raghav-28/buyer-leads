@@ -1,7 +1,7 @@
 ﻿# Mini Buyer - Real Estate Lead Management System
 
 A Next.js application for managing real estate buyer leads with authentication, validation, and accessibility features.
-
+live at :-https://mini-buyer-five.vercel.app/buyers
 ## Setup
 
 ### Prerequisites
@@ -17,6 +17,9 @@ DATABASE_URL="postgresql://username:password@localhost:5432/buyer_leads"
 NEXTAUTH_SECRET="your-secret-key-here"
 NEXTAUTH_URL="http://localhost:3000"
 ```
+### Wireframe Diagram to get App Workflow Overview
+![Uploading minibuyerapp.png…]()
+
 
 ### Installation & Setup
 
@@ -172,22 +175,22 @@ For testing purposes, you can use these pre-configured accounts:
 
 ## Project Structure
 buyer-leads/
- app/ # Next.js App Router
-  api/ # API routes
-  buyers/ # Buyer management pages
-  login/ # Authentication pages
-  signup/
- components/ # Reusable React components
-  AccessibleFormField.tsx
-  AccessibleTable.tsx
-  ...
- lib/ # Utility functions and configurations
-  accessibility.ts # Accessibility utilities
-  auth.ts # NextAuth configuration
-  validations/ # Zod validation schemas
-  ...
- prisma/ # Database schema and migrations
- public/ # Static assets
+├── app/
+│   ├── api/
+│   ├── buyers/
+│   ├── login/
+│   └── signup/
+├── components/
+│   ├── AccessibleFormField.tsx
+│   ├── AccessibleTable.tsx
+│   └── ...
+├── lib/
+│   ├── accessibility.ts
+│   ├── auth.ts
+│   └── validations/
+├── prisma/
+└── public/
+
 
 ## Technology Stack
 
