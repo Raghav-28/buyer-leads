@@ -1,34 +1,50 @@
-import Link from "next/link";
+"use client";
+
+import { useSession } from "next-auth/react";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 export default function HomePage() {
-  const pages = [
-    { title: "All Buyers", href: "/buyers" },
-    { title: "Add New Buyer", href: "/buyers/new" },
-    { title: "Import Buyers (CSV)", href: "/buyers/import" },
-    // Add any other pages you implemented
-  ];
+  const { data: session, status } = useSession();
+  const router = useRouter();
 
+  useEffect(() => {
+    if (status === "loading") return; // Still loading
+
+    if (!session) {
+      // User not logged in, redirect to signup
+      router.push("/signup");
+    } else {
+      // User is logged in, redirect to buyers dashboard
+      router.push("/buyers");
+    }
+  }, [session, status, router]);
+
+  // Show loading while checking authentication
+  if (status === "loading") {
+    return (
+      <div style={{ 
+        display: "flex", 
+        justifyContent: "center", 
+        alignItems: "center", 
+        height: "100vh",
+        fontSize: "18px"
+      }}>
+        Checking authentication...
+      </div>
+    );
+  }
+
+  // This will briefly show before redirect
   return (
-    <div>
-      <h2>Welcome to the Buyer Leads Dashboard</h2>
-      <p>Click on a page to navigate:</p>
-
-      <ul>
-        {pages.map((page) => (
-          <li key={page.href} style={{ marginBottom: "8px" }}>
-            <Link
-              href={page.href}
-              style={{
-                textDecoration: "none",
-                color: "blue",
-                fontWeight: "bold",
-              }}
-            >
-              {page.title}
-            </Link>
-          </li>
-        ))}
-      </ul>
+    <div style={{ 
+      display: "flex", 
+      justifyContent: "center", 
+      alignItems: "center", 
+      height: "100vh",
+      fontSize: "18px"
+    }}>
+      Redirecting...
     </div>
   );
 }

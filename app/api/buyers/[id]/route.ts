@@ -61,8 +61,10 @@ export async function PATCH(
       return NextResponse.json({ error: "Buyer not found" }, { status: 404 });
     }
 
-    // Ownership check
-    if (oldBuyer.ownerId !== session.user.id) {
+    // Ownership / Admin check
+    const isOwner = oldBuyer.ownerId === session.user.id;
+    const isAdmin = session.user.role === "ADMIN";
+    if (!isOwner && !isAdmin) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -107,3 +109,4 @@ export async function PATCH(
     return NextResponse.json({ error: "Error updating buyer" }, { status: 500 });
   }
 }
+

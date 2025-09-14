@@ -13,6 +13,7 @@ export const buyerSchema = z
     budgetMax: z.number().min(0).optional(),
     timeline: z.enum(["M0_3m", "M3_6m", "MoreThan6m", "Exploring"]),
     source: z.enum(["Website", "Referral", "Walk_in", "Call", "Other"]),
+    status: z.enum(["New", "Qualified", "Contacted", "Visited", "Negotiation", "Converted", "Dropped"]),
     notes: z.string().max(1000).optional(),
   })
   .refine(

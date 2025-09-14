@@ -23,11 +23,13 @@ model Buyer {
   status       Status   @default(New)
   notes        String?  @db.VarChar(1000)
   tags         String[]
-  ownerId      String
+  ownerId      String?   // 👈 make optional
+  owner        User?     @relation("UserBuyers", fields: [ownerId], references: [id]) // 👈 relation field
   updatedAt    DateTime @updatedAt
 
   history      BuyerHistory[]
 }
+
 
 model BuyerHistory {
   id        String   @id @default(uuid())
@@ -36,7 +38,19 @@ model BuyerHistory {
   changedAt DateTime @default(now())
   diff      Json
 
-  buyer     Buyer    @relation(fields: [buyerId], references: [id])
+  buyer Buyer @relation(fields: [buyerId], references: [id])
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String?
+  email     String   @unique
+  role      Role     @default(USER)
+  password  String? // only needed for credentials auth
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  buyers Buyer[] @relation("UserBuyers")
 }
 
 enum City {
@@ -91,4 +105,9 @@ enum Status {
   Negotiation
   Converted
   Dropped
+}
+
+enum Role {
+  USER
+  ADMIN
 }

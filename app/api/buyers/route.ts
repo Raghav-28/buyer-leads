@@ -4,7 +4,7 @@ import { buyerSchema } from "@/lib/validations/buyer";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
-// ✅ Create new buyer
+//  Create new buyer
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
 
@@ -44,7 +44,7 @@ export async function POST(request: Request) {
   }
 }
 
-// GET all buyers
+// GET all buyers with role-based access
 export async function GET() {
   const session = await getServerSession(authOptions);
 
@@ -53,9 +53,29 @@ export async function GET() {
   }
 
   try {
-    const buyers = await prisma.buyer.findMany({
-      orderBy: { updatedAt: "desc" },
-    });
+    let buyers;
+    
+    // Admin can see all buyers, regular users only see their own
+    if (session.user.role === "ADMIN") {
+      buyers = await prisma.buyer.findMany({
+        orderBy: { updatedAt: "desc" },
+        include: {
+          owner: {
+            select: {
+              name: true,
+              email: true,
+            },
+          },
+        },
+      });
+    } else {
+      buyers = await prisma.buyer.findMany({
+        where: {
+          ownerId: session.user.id,
+        },
+        orderBy: { updatedAt: "desc" },
+      });
+    }
 
     // Ensure it's always an array
     return NextResponse.json(Array.isArray(buyers) ? buyers : []);
