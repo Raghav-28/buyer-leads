@@ -98,7 +98,7 @@ export default function BuyerDetailPage() {
       <h1>Buyer Details</h1>
 
       <div style={{ marginBottom: "24px", padding: "12px", border: "1px solid #ddd", borderRadius: "6px" }}>
-        <p><strong>ID:</strong> {buyer.id}</p>
+        <p className="text-amber-300"><strong>ID:</strong> {buyer.id}</p>
         <p><strong>Email:</strong> {buyer.email}</p>
         <p><strong>Phone:</strong> {buyer.phone}</p>
         <p><strong>City:</strong> {buyer.city}</p>
@@ -117,18 +117,18 @@ export default function BuyerDetailPage() {
           placeholder="Full Name"
           value={form.fullName}
           onChange={(e) => setForm({ ...form, fullName: e.target.value })}
-          style={{ padding: "8px", borderRadius: "4px", border: "1px solid #ccc" }}
+          style={{ padding: "8px", borderRadius: "4px", border: "1px solid #000" }}
         />
         <textarea
           placeholder="Notes"
           value={form.notes}
           onChange={(e) => setForm({ ...form, notes: e.target.value })}
-          style={{ padding: "8px", borderRadius: "4px", border: "1px solid #ccc" }}
+          style={{ padding: "8px", borderRadius: "4px", border: "1px solid #000" }}
         />
         <select
           value={form.status}
           onChange={(e) => setForm({ ...form, status: e.target.value })}
-          style={{ padding: "8px", borderRadius: "4px", border: "1px solid #ccc" }}
+          style={{ padding: "8px", borderRadius: "4px", border: "1px solid #000" }}
         >
           <option value="New">New</option>
           <option value="Qualified">Qualified</option>
