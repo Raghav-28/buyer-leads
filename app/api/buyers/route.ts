@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { buyerSchema } from "@/lib/validations/buyer";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";  // ✅ fixed import
+import { authOptions } from "@/lib/auth";
 
 // ✅ Create new buyer
 export async function POST(request: Request) {
@@ -15,14 +15,14 @@ export async function POST(request: Request) {
   try {
     const json = await request.json();
 
-    // ✅ parse the body without ownerId
-    const { ownerId, ...rest } = json; // ignore if sent by client
+    // ignore ownerId from client
+    const { ownerId, ...rest } = json;
     const parsed = buyerSchema.parse(rest);
 
     const buyer = await prisma.buyer.create({
       data: {
         ...parsed,
-        ownerId: session.user.id, // inject logged-in user ID
+        ownerId: session.user.id,
       },
     });
 
@@ -43,7 +43,8 @@ export async function POST(request: Request) {
     );
   }
 }
-// ✅ Get all buyers
+
+// GET all buyers
 export async function GET() {
   const session = await getServerSession(authOptions);
 
@@ -53,11 +54,13 @@ export async function GET() {
 
   try {
     const buyers = await prisma.buyer.findMany({
-      orderBy: { updatedAt: "desc" }, // ✅ fixed (your model has updatedAt, not createdAt)
+      orderBy: { updatedAt: "desc" },
     });
-    return NextResponse.json(buyers, { status: 200 });
+
+    // Ensure it's always an array
+    return NextResponse.json(Array.isArray(buyers) ? buyers : []);
   } catch (error) {
     console.error("GET /buyers error:", error);
-    return NextResponse.json({ error: "Something went wrong" }, { status: 500 });
+    return NextResponse.json([], { status: 500 }); // return empty array on error
   }
 }

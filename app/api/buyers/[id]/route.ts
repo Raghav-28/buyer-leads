@@ -6,6 +6,7 @@ import { authOptions } from "@/lib/auth";
 
 
 // ✅ GET buyer by ID
+// GET buyer by ID with last 5 history
 export async function GET(
   req: Request,
   { params }: { params: { id: string } }
@@ -16,16 +17,27 @@ export async function GET(
   }
 
   try {
-    const buyer = await prisma.buyer.findUnique({ where: { id: params.id } });
+    const buyer = await prisma.buyer.findUnique({
+      where: { id: params.id },
+    });
+
     if (!buyer) {
       return NextResponse.json({ error: "Buyer not found" }, { status: 404 });
     }
-    return NextResponse.json(buyer);
+
+    const history = await prisma.buyerHistory.findMany({
+      where: { buyerId: params.id },
+      orderBy: { changedAt: "desc" },
+      take: 5,
+    });
+
+    return NextResponse.json({ ...buyer, history });
   } catch (error) {
     console.error("GET error:", error);
     return NextResponse.json({ error: "Error fetching buyer" }, { status: 500 });
   }
 }
+
 
 // PATCH buyer by ID
 export async function PATCH(
