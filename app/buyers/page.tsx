@@ -45,6 +45,11 @@ export default function BuyersPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   
+  //Add Delete State
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [buyerToDelete, setBuyerToDelete] = useState<{ id: string; name: string } | null>(null);
+
   // All hooks must be called at the top level
   const [buyers, setBuyers] = useState<Buyer[]>([]);
   const [loading, setLoading] = useState(true);
@@ -176,6 +181,43 @@ export default function BuyersPage() {
       </div>
     );
   }
+  // delete function
+  const handleDelete = async (buyerId: string, buyerName: string) => {
+    setBuyerToDelete({ id: buyerId, name: buyerName });
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!buyerToDelete) return;
+    
+    setDeletingId(buyerToDelete.id);
+    try {
+      const res = await fetch(`/api/buyers/${buyerToDelete.id}`, {
+        method: 'DELETE',
+      });
+      
+      if (res.ok) {
+        setMessage(`Buyer "${buyerToDelete.name}" deleted successfully`);
+        // Refresh the buyers list
+        await fetchBuyers(pagination.page);
+      } else {
+        const data = await res.json();
+        setError(data.error || 'Failed to delete buyer');
+      }
+    } catch (err) {
+      console.error('Delete error:', err);
+      setError('Failed to delete buyer');
+    } finally {
+      setDeletingId(null);
+      setShowDeleteConfirm(false);
+      setBuyerToDelete(null);
+    }
+  };
+
+  const cancelDelete = () => {
+    setShowDeleteConfirm(false);
+    setBuyerToDelete(null);
+  };
 
   // Handle filter changes
   const handleFilterChange = (key: string, value: string) => {
@@ -670,21 +712,42 @@ export default function BuyersPage() {
                             {b.owner?.name || "Unknown"}
                           </td>
                         )}
-                        <td style={{ padding: "12px" }}>
-                          {(session.user.role === "ADMIN" || b.ownerId === session.user.id) && (
-                            <Link 
-                              href={`/buyers/${b.id}/edit`}
-                              style={{ 
-                                color: "#0070f3", 
-                                textDecoration: "none",
-                                fontSize: "13px",
-                                fontWeight: "500"
-                              }}
-                            >
-                              Edit
-                            </Link>
-                          )}
+                       <td style={{ padding: "12px" }}>
+                          <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+                            {(session.user.role === "ADMIN" || b.ownerId === session.user.id) && (
+                              <>
+                                <Link 
+                                  href={`/buyers/${b.id}/edit`}
+                                  style={{ 
+                                    color: "#0070f3", 
+                                    textDecoration: "none",
+                                    fontSize: "13px",
+                                    fontWeight: "500"
+                                  }}
+                                >
+                                  Edit
+                                </Link>
+                                <button
+                                  onClick={() => handleDelete(b.id, b.fullName)}
+                                  disabled={deletingId === b.id}
+                                  style={{
+                                    color: "#dc3545",
+                                    background: "none",
+                                    border: "none",
+                                    fontSize: "13px",
+                                    fontWeight: "500",
+                                    cursor: deletingId === b.id ? "not-allowed" : "pointer",
+                                    opacity: deletingId === b.id ? 0.6 : 1,
+                                    textDecoration: "underline"
+                                  }}
+                                >
+                                  {deletingId === b.id ? "Deleting..." : "Delete"}
+                                </button>
+                              </>
+                            )}
+                          </div>
                         </td>
+
                       </tr>
                     ))}
                   </tbody>
@@ -760,6 +823,68 @@ export default function BuyersPage() {
           )}
         </div>
       </div>
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && buyerToDelete && (
+        <div style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: "rgba(0, 0, 0, 0.5)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          zIndex: 1000
+        }}>
+          <div style={{
+            backgroundColor: "white",
+            padding: "24px",
+            borderRadius: "8px",
+            maxWidth: "400px",
+            width: "90%",
+            boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)"
+          }}>
+            <h3 style={{ margin: "0 0 16px 0", color: "#dc3545" }}>
+              Confirm Delete
+            </h3>
+            <p style={{ margin: "0 0 24px 0", color: "#6c757d" }}>
+              Are you sure you want to delete buyer <strong>"{buyerToDelete.name}"</strong>? 
+              This action cannot be undone.
+            </p>
+            <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end" }}>
+              <button
+                onClick={cancelDelete}
+                style={{
+                  padding: "8px 16px",
+                  backgroundColor: "#6c757d",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "4px",
+                  cursor: "pointer"
+                }}
+                >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDelete}
+                disabled={deletingId === buyerToDelete.id}
+                style={{
+                  padding: "8px 16px",
+                  backgroundColor: "#dc3545",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "4px",
+                  cursor: deletingId === buyerToDelete.id ? "not-allowed" : "pointer",
+                  opacity: deletingId === buyerToDelete.id ? 0.6 : 1
+                }}
+              >
+                {deletingId === buyerToDelete.id ? "Deleting..." : "Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

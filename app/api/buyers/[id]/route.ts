@@ -110,3 +110,38 @@ export async function PATCH(
   }
 }
 
+// DELETE buyer by ID
+export async function DELETE(
+  req: Request,
+  { params }: { params: { id: string } }
+) {
+  const session = await getServerSession(authOptions);
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  try {
+    // Fetch buyer to check ownership
+    const buyer = await prisma.buyer.findUnique({ where: { id: params.id } });
+    if (!buyer) {
+      return NextResponse.json({ error: "Buyer not found" }, { status: 404 });
+    }
+
+    // Ownership / Admin check
+    const isOwner = buyer.ownerId === session.user.id;
+    const isAdmin = session.user.role === "ADMIN";
+    if (!isOwner && !isAdmin) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    // Delete buyer (this will cascade delete history due to foreign key)
+    await prisma.buyer.delete({
+      where: { id: params.id },
+    });
+
+    return NextResponse.json({ message: "Buyer deleted successfully" });
+  } catch (error) {
+    console.error("DELETE error:", error);
+    return NextResponse.json({ error: "Error deleting buyer" }, { status: 500 });
+  }
+}

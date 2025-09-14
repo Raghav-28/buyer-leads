@@ -103,11 +103,6 @@ export async function GET(request: Request) {
     // Build where clause
     const where: any = {};
     
-    // Role-based access: Admin can see all buyers, regular users only see their own
-    if (session.user.role !== "ADMIN") {
-      where.ownerId = session.user.id;
-    }
-    
     // Apply filters
     if (status) where.status = status;
     if (city) where.city = city;
@@ -130,32 +125,21 @@ export async function GET(request: Request) {
     // Get total count for pagination
     const totalCount = await prisma.buyer.count({ where });
     
-    // Get buyers with pagination
-    let buyers;
-    
-    if (session.user.role === "ADMIN") {
-      buyers = await prisma.buyer.findMany({
-        where,
-        orderBy,
-        skip: offset,
-        take: limit,
-        include: {
-          owner: {
-            select: {
-              name: true,
-              email: true,
-            },
-          },
-        },
-      });
-    } else {
-      buyers = await prisma.buyer.findMany({
-        where,
-        orderBy,
-        skip: offset,
-        take: limit,
-      });
-    }
+   // Get buyers with pagination - always include owner information
+const buyers = await prisma.buyer.findMany({
+  where,
+  orderBy,
+  skip: offset,
+  take: limit,
+  include: {
+    owner: {
+      select: {
+        name: true,
+        email: true,
+      },
+    },
+  },
+});
     
     // Calculate pagination info
     const totalPages = Math.ceil(totalCount / limit);
