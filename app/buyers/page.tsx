@@ -3,7 +3,9 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useSession, signIn } from "next-auth/react";
+import { useRouter, useSearchParams } from "next/navigation";
 import BuyerCSVImport from "@/components/BuyerCSVImport";
+import { useDebounce } from "@/hooks/useDebounce";
 
 type Buyer = {
   id: string;
@@ -29,35 +31,92 @@ type Buyer = {
   };
 };
 
+type PaginationInfo = {
+  page: number;
+  limit: number;
+  totalCount: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPrevPage: boolean;
+};
+
 export default function BuyersPage() {
   const { data: session, status } = useSession();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   
   // All hooks must be called at the top level
   const [buyers, setBuyers] = useState<Buyer[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-
-  const [filter, setFilter] = useState({
-    status: "",
-    city: "",
-    propertyType: "",
+  const [pagination, setPagination] = useState<PaginationInfo>({
+    page: 1,
+    limit: 10,
+    totalCount: 0,
+    totalPages: 0,
+    hasNextPage: false,
+    hasPrevPage: false,
   });
 
-  const [search, setSearch] = useState("");
-  const [sortKey, setSortKey] = useState<keyof Buyer>("updatedAt");
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  // URL-synced state
+  const [filters, setFilters] = useState({
+    status: searchParams.get("status") || "",
+    city: searchParams.get("city") || "",
+    propertyType: searchParams.get("propertyType") || "",
+    timeline: searchParams.get("timeline") || "",
+  });
 
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const [search, setSearch] = useState(searchParams.get("search") || "");
+  const [sortBy, setSortBy] = useState(searchParams.get("sortBy") || "updatedAt");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">(
+    (searchParams.get("sortOrder") as "asc" | "desc") || "desc"
+  );
 
-  const fetchBuyers = async () => {
+  // Debounced search
+  const debouncedSearch = useDebounce(search, 300);
+
+  // Update URL when filters change
+  const updateURL = (newFilters: any, newSearch: string, newSortBy: string, newSortOrder: string, newPage: number) => {
+    const params = new URLSearchParams();
+    
+    if (newFilters.status) params.set("status", newFilters.status);
+    if (newFilters.city) params.set("city", newFilters.city);
+    if (newFilters.propertyType) params.set("propertyType", newFilters.propertyType);
+    if (newFilters.timeline) params.set("timeline", newFilters.timeline);
+    if (newSearch) params.set("search", newSearch);
+    if (newSortBy !== "updatedAt") params.set("sortBy", newSortBy);
+    if (newSortOrder !== "desc") params.set("sortOrder", newSortOrder);
+    if (newPage > 1) params.set("page", newPage.toString());
+    
+    const queryString = params.toString();
+    const newURL = queryString ? `/buyers?${queryString}` : "/buyers";
+    
+    router.push(newURL, { scroll: false });
+  };
+
+  const fetchBuyers = async (page: number = 1) => {
     setLoading(true);
     setError("");
+    
     try {
-      const res = await fetch("/api/buyers");
+      const params = new URLSearchParams();
+      params.set("page", page.toString());
+      params.set("limit", "10");
+      
+      if (filters.status) params.set("status", filters.status);
+      if (filters.city) params.set("city", filters.city);
+      if (filters.propertyType) params.set("propertyType", filters.propertyType);
+      if (filters.timeline) params.set("timeline", filters.timeline);
+      if (debouncedSearch) params.set("search", debouncedSearch);
+      if (sortBy !== "updatedAt") params.set("sortBy", sortBy);
+      if (sortOrder !== "desc") params.set("sortOrder", sortOrder);
+      
+      const res = await fetch(`/api/buyers?${params.toString()}`);
       const data = await res.json();
+      
       if (res.ok) {
-        setBuyers(Array.isArray(data) ? data : []);
+        setBuyers(Array.isArray(data.buyers) ? data.buyers : []);
+        setPagination(data.pagination);
       } else {
         setError(data.error || "Failed to fetch buyers");
       }
@@ -69,12 +128,19 @@ export default function BuyersPage() {
     }
   };
 
+  // Fetch buyers when dependencies change
   useEffect(() => {
-    // Only fetch buyers if user is authenticated
     if (status !== "loading" && session) {
-      fetchBuyers();
+      fetchBuyers(1);
     }
-  }, [session, status]);
+  }, [session, status, filters, debouncedSearch, sortBy, sortOrder]);
+
+  // Update URL when state changes
+  useEffect(() => {
+    if (status !== "loading" && session) {
+      updateURL(filters, debouncedSearch, sortBy, sortOrder, 1);
+    }
+  }, [filters, debouncedSearch, sortBy, sortOrder]);
 
   // Handle authentication states
   if (status === "loading") {
@@ -111,36 +177,25 @@ export default function BuyersPage() {
     );
   }
 
-  // --- Filtering + searching ---
-  const filteredBuyers = buyers
-    .filter(
-      (b) =>
-        (!filter.status || b.status === filter.status) &&
-        (!filter.city || b.city === filter.city) &&
-        (!filter.propertyType || b.propertyType === filter.propertyType)
-    )
-    .filter(
-      (b) =>
-        b.fullName.toLowerCase().includes(search.toLowerCase()) ||
-        b.email.toLowerCase().includes(search.toLowerCase()) ||
-        b.phone.includes(search)
-    );
+  // Handle filter changes
+  const handleFilterChange = (key: string, value: string) => {
+    setFilters(prev => ({ ...prev, [key]: value }));
+  };
 
-  // --- Sorting ---
-  const sortedBuyers = [...filteredBuyers].sort((a, b) => {
-    const valA = a[sortKey] || "";
-    const valB = b[sortKey] || "";
-    if (valA < valB) return sortOrder === "asc" ? -1 : 1;
-    if (valA > valB) return sortOrder === "asc" ? 1 : -1;
-    return 0;
-  });
+  // Handle page change
+  const handlePageChange = (newPage: number) => {
+    fetchBuyers(newPage);
+    updateURL(filters, debouncedSearch, sortBy, sortOrder, newPage);
+  };
 
-  // --- Pagination ---
-  const totalPages = Math.ceil(sortedBuyers.length / itemsPerPage);
-  const paginatedBuyers = sortedBuyers.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  // Handle sort change
+  const handleSortChange = (newSortBy: string) => {
+    setSortBy(newSortBy);
+  };
+
+  const handleSortOrderChange = () => {
+    setSortOrder(prev => prev === "asc" ? "desc" : "asc");
+  };
 
   // --- Export CSV ---
   const exportCSV = () => {
@@ -220,24 +275,8 @@ export default function BuyersPage() {
           alignItems: "center"
         }}>
           <h1 style={{ margin: 0, fontSize: "24px" }}>Buyer Leads Dashboard</h1>
-          <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
-            <span style={{ fontSize: "14px" }}>
-              Welcome, {session.user.name || session.user.email} ({session.user.role})
-            </span>
-            <button
-              onClick={() => signIn()}
-              style={{
-                padding: "8px 16px",
-                background: "#dc3545",
-                color: "white",
-                border: "none",
-                borderRadius: "4px",
-                cursor: "pointer",
-                fontSize: "14px"
-              }}
-            >
-              Logout
-            </button>
+          <div style={{ fontSize: "14px" }}>
+            Welcome, {session.user.name || session.user.email} ({session.user.role})
           </div>
         </div>
 
@@ -289,7 +328,7 @@ export default function BuyersPage() {
             </button>
             
             <div style={{ flex: 1 }}>
-              <BuyerCSVImport onSuccess={fetchBuyers} />
+              <BuyerCSVImport onSuccess={() => fetchBuyers(pagination.page)} />
             </div>
           </div>
 
@@ -337,8 +376,8 @@ export default function BuyersPage() {
                   Status
                 </label>
                 <select
-                  value={filter.status}
-                  onChange={(e) => setFilter({ ...filter, status: e.target.value })}
+                  value={filters.status}
+                  onChange={(e) => handleFilterChange("status", e.target.value)}
                   style={{ 
                     width: "100%", 
                     padding: "10px", 
@@ -364,8 +403,8 @@ export default function BuyersPage() {
                   City
                 </label>
                 <select
-                  value={filter.city}
-                  onChange={(e) => setFilter({ ...filter, city: e.target.value })}
+                  value={filters.city}
+                  onChange={(e) => handleFilterChange("city", e.target.value)}
                   style={{ 
                     width: "100%", 
                     padding: "10px", 
@@ -375,11 +414,11 @@ export default function BuyersPage() {
                   }}
                 >
                   <option value="">All Cities</option>
-                  {[...new Set(buyers.map((b) => b.city))].map((city) => (
-                    <option key={city} value={city}>
-                      {city}
-                    </option>
-                  ))}
+                  <option value="Chandigarh">Chandigarh</option>
+                  <option value="Mohali">Mohali</option>
+                  <option value="Zirakpur">Zirakpur</option>
+                  <option value="Panchkula">Panchkula</option>
+                  <option value="Other">Other</option>
                 </select>
               </div>
 
@@ -389,8 +428,8 @@ export default function BuyersPage() {
                   Property Type
                 </label>
                 <select
-                  value={filter.propertyType}
-                  onChange={(e) => setFilter({ ...filter, propertyType: e.target.value })}
+                  value={filters.propertyType}
+                  onChange={(e) => handleFilterChange("propertyType", e.target.value)}
                   style={{ 
                     width: "100%", 
                     padding: "10px", 
@@ -400,11 +439,35 @@ export default function BuyersPage() {
                   }}
                 >
                   <option value="">All Property Types</option>
-                  {[...new Set(buyers.map((b) => b.propertyType))].map((pt) => (
-                    <option key={pt} value={pt}>
-                      {pt}
-                    </option>
-                  ))}
+                  <option value="Apartment">Apartment</option>
+                  <option value="Villa">Villa</option>
+                  <option value="Plot">Plot</option>
+                  <option value="Office">Office</option>
+                  <option value="Retail">Retail</option>
+                </select>
+              </div>
+
+              {/* Timeline Filter */}
+              <div>
+                <label style={{ display: "block", marginBottom: "5px", fontSize: "14px", fontWeight: "500" }}>
+                  Timeline
+                </label>
+                <select
+                  value={filters.timeline}
+                  onChange={(e) => handleFilterChange("timeline", e.target.value)}
+                  style={{ 
+                    width: "100%", 
+                    padding: "10px", 
+                    border: "1px solid #ced4da", 
+                    borderRadius: "4px",
+                    fontSize: "14px"
+                  }}
+                >
+                  <option value="">All Timelines</option>
+                  <option value="M0_3m">0-3 months</option>
+                  <option value="M3_6m">3-6 months</option>
+                  <option value="MoreThan6m">More than 6 months</option>
+                  <option value="Exploring">Exploring</option>
                 </select>
               </div>
 
@@ -415,8 +478,8 @@ export default function BuyersPage() {
                 </label>
                 <div style={{ display: "flex", gap: "5px" }}>
                   <select
-                    value={sortKey}
-                    onChange={(e) => setSortKey(e.target.value as keyof Buyer)}
+                    value={sortBy}
+                    onChange={(e) => handleSortChange(e.target.value)}
                     style={{ 
                       flex: 1,
                       padding: "10px", 
@@ -431,7 +494,7 @@ export default function BuyersPage() {
                     <option value="status">Status</option>
                   </select>
                   <button
-                    onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
+                    onClick={handleSortOrderChange}
                     style={{ 
                       padding: "10px 12px", 
                       border: "1px solid #ced4da", 
@@ -457,11 +520,8 @@ export default function BuyersPage() {
             padding: "10px 0"
           }}>
             <div style={{ fontSize: "14px", color: "#6c757d" }}>
-              Showing {paginatedBuyers.length} of {filteredBuyers.length} buyers
-              {filteredBuyers.length !== buyers.length && ` (filtered from ${buyers.length} total)`}
-            </div>
-            <div style={{ fontSize: "14px", color: "#6c757d" }}>
-              Page {currentPage} of {totalPages || 1}
+              Showing {buyers.length} of {pagination.totalCount} buyers
+              {pagination.totalCount > 0 && ` (Page ${pagination.page} of ${pagination.totalPages})`}
             </div>
           </div>
 
@@ -485,14 +545,14 @@ export default function BuyersPage() {
             }}>
               {error}
             </div>
-          ) : filteredBuyers.length === 0 ? (
+          ) : buyers.length === 0 ? (
             <div style={{ 
               textAlign: "center", 
               padding: "40px", 
               fontSize: "16px", 
               color: "#6c757d" 
             }}>
-              {buyers.length === 0 ? "No buyers found. Create your first buyer!" : "No buyers match the current filters."}
+              {pagination.totalCount === 0 ? "No buyers found. Create your first buyer!" : "No buyers match the current filters."}
             </div>
           ) : (
             <>
@@ -541,7 +601,7 @@ export default function BuyersPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {paginatedBuyers.map((b) => (
+                    {buyers.map((b) => (
                       <tr key={b.id} style={{ borderBottom: "1px solid #dee2e6" }}>
                         <td style={{ padding: "12px" }}>
                           <Link 
@@ -632,7 +692,7 @@ export default function BuyersPage() {
               </div>
 
               {/* Pagination */}
-              {totalPages > 1 && (
+              {pagination.totalPages > 1 && (
                 <div style={{ 
                   display: "flex", 
                   justifyContent: "center", 
@@ -641,15 +701,15 @@ export default function BuyersPage() {
                   marginTop: "20px" 
                 }}>
                   <button
-                    disabled={currentPage === 1}
-                    onClick={() => setCurrentPage((p) => p - 1)}
+                    disabled={!pagination.hasPrevPage}
+                    onClick={() => handlePageChange(pagination.page - 1)}
                     style={{
                       padding: "8px 16px",
                       border: "1px solid #ced4da",
                       borderRadius: "4px",
-                      background: currentPage === 1 ? "#f8f9fa" : "white",
-                      color: currentPage === 1 ? "#6c757d" : "#495057",
-                      cursor: currentPage === 1 ? "not-allowed" : "pointer",
+                      background: !pagination.hasPrevPage ? "#f8f9fa" : "white",
+                      color: !pagination.hasPrevPage ? "#6c757d" : "#495057",
+                      cursor: !pagination.hasPrevPage ? "not-allowed" : "pointer",
                       fontSize: "14px"
                     }}
                   >
@@ -657,18 +717,18 @@ export default function BuyersPage() {
                   </button>
                   
                   <div style={{ display: "flex", gap: "5px" }}>
-                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
                       const page = i + 1;
                       return (
                         <button
                           key={page}
-                          onClick={() => setCurrentPage(page)}
+                          onClick={() => handlePageChange(page)}
                           style={{
                             padding: "8px 12px",
                             border: "1px solid #ced4da",
                             borderRadius: "4px",
-                            background: currentPage === page ? "#0070f3" : "white",
-                            color: currentPage === page ? "white" : "#495057",
+                            background: pagination.page === page ? "#0070f3" : "white",
+                            color: pagination.page === page ? "white" : "#495057",
                             cursor: "pointer",
                             fontSize: "14px"
                           }}
@@ -680,15 +740,15 @@ export default function BuyersPage() {
                   </div>
                   
                   <button
-                    disabled={currentPage === totalPages}
-                    onClick={() => setCurrentPage((p) => p + 1)}
+                    disabled={!pagination.hasNextPage}
+                    onClick={() => handlePageChange(pagination.page + 1)}
                     style={{
                       padding: "8px 16px",
                       border: "1px solid #ced4da",
                       borderRadius: "4px",
-                      background: currentPage === totalPages ? "#f8f9fa" : "white",
-                      color: currentPage === totalPages ? "#6c757d" : "#495057",
-                      cursor: currentPage === totalPages ? "not-allowed" : "pointer",
+                      background: !pagination.hasNextPage ? "#f8f9fa" : "white",
+                      color: !pagination.hasNextPage ? "#6c757d" : "#495057",
+                      cursor: !pagination.hasNextPage ? "not-allowed" : "pointer",
                       fontSize: "14px"
                     }}
                   >

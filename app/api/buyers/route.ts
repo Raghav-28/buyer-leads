@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { buyerSchema } from "@/lib/validations/buyer";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { rateLimitConfigs } from "@/lib/rateLimit";
 
 //  Create new buyer
 export async function POST(request: Request) {
@@ -10,6 +11,19 @@ export async function POST(request: Request) {
 
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // Rate limiting for create operations
+  const rateLimitResult = rateLimitConfigs.createUpdate(session.user.id);
+  if (!rateLimitResult.allowed) {
+    return NextResponse.json(
+      { 
+        error: "Too many requests", 
+        message: "Please wait before creating another buyer",
+        resetTime: rateLimitResult.resetTime 
+      }, 
+      { status: 429 }
+    );
   }
 
   try {
@@ -44,21 +58,87 @@ export async function POST(request: Request) {
   }
 }
 
-// GET all buyers with role-based access
-export async function GET() {
+// GET all buyers with server-side pagination, filtering, and search
+export async function GET(request: Request) {
   const session = await getServerSession(authOptions);
 
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  // Rate limiting for general API access
+  const rateLimitResult = rateLimitConfigs.general(session.user.id);
+  if (!rateLimitResult.allowed) {
+    return NextResponse.json(
+      { 
+        error: "Too many requests", 
+        message: "Please wait before making more requests",
+        resetTime: rateLimitResult.resetTime 
+      }, 
+      { status: 429 }
+    );
+  }
+
   try {
+    const { searchParams } = new URL(request.url);
+    
+    // Pagination parameters
+    const page = parseInt(searchParams.get("page") || "1");
+    const limit = parseInt(searchParams.get("limit") || "10");
+    const offset = (page - 1) * limit;
+    
+    // Filter parameters
+    const status = searchParams.get("status") || "";
+    const city = searchParams.get("city") || "";
+    const propertyType = searchParams.get("propertyType") || "";
+    const timeline = searchParams.get("timeline") || "";
+    
+    // Search parameter
+    const search = searchParams.get("search") || "";
+    
+    // Sort parameters
+    const sortBy = searchParams.get("sortBy") || "updatedAt";
+    const sortOrder = searchParams.get("sortOrder") || "desc";
+    
+    // Build where clause
+    const where: any = {};
+    
+    // Role-based access: Admin can see all buyers, regular users only see their own
+    if (session.user.role !== "ADMIN") {
+      where.ownerId = session.user.id;
+    }
+    
+    // Apply filters
+    if (status) where.status = status;
+    if (city) where.city = city;
+    if (propertyType) where.propertyType = propertyType;
+    if (timeline) where.timeline = timeline;
+    
+    // Apply search
+    if (search) {
+      where.OR = [
+        { fullName: { contains: search, mode: "insensitive" } },
+        { email: { contains: search, mode: "insensitive" } },
+        { phone: { contains: search } },
+      ];
+    }
+    
+    // Build orderBy clause
+    const orderBy: any = {};
+    orderBy[sortBy] = sortOrder;
+    
+    // Get total count for pagination
+    const totalCount = await prisma.buyer.count({ where });
+    
+    // Get buyers with pagination
     let buyers;
     
-    // Admin can see all buyers, regular users only see their own
     if (session.user.role === "ADMIN") {
       buyers = await prisma.buyer.findMany({
-        orderBy: { updatedAt: "desc" },
+        where,
+        orderBy,
+        skip: offset,
+        take: limit,
         include: {
           owner: {
             select: {
@@ -70,17 +150,44 @@ export async function GET() {
       });
     } else {
       buyers = await prisma.buyer.findMany({
-        where: {
-          ownerId: session.user.id,
-        },
-        orderBy: { updatedAt: "desc" },
+        where,
+        orderBy,
+        skip: offset,
+        take: limit,
       });
     }
-
-    // Ensure it's always an array
-    return NextResponse.json(Array.isArray(buyers) ? buyers : []);
+    
+    // Calculate pagination info
+    const totalPages = Math.ceil(totalCount / limit);
+    const hasNextPage = page < totalPages;
+    const hasPrevPage = page > 1;
+    
+    return NextResponse.json({
+      buyers: Array.isArray(buyers) ? buyers : [],
+      pagination: {
+        page,
+        limit,
+        totalCount,
+        totalPages,
+        hasNextPage,
+        hasPrevPage,
+      },
+    });
   } catch (error) {
     console.error("GET /buyers error:", error);
-    return NextResponse.json([], { status: 500 }); // return empty array on error
+    return NextResponse.json(
+      { 
+        buyers: [], 
+        pagination: {
+          page: 1,
+          limit: 10,
+          totalCount: 0,
+          totalPages: 0,
+          hasNextPage: false,
+          hasPrevPage: false,
+        }
+      }, 
+      { status: 500 }
+    );
   }
 }
