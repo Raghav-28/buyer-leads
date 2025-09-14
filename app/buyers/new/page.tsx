@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import Link from "next/link";
@@ -40,6 +40,27 @@ export default function NewBuyerForm() {
     // client-side validation for budget
     if (!isNaN(budgetMin) && !isNaN(budgetMax) && budgetMax < budgetMin) {
       setError("Budget Max must be greater than or equal to Budget Min");
+      setLoading(false);
+      return;
+    }
+
+    // BHK validation for Apartment and Villa
+    if ((form.propertyType === "Apartment" || form.propertyType === "Villa") && !form.bhk) {
+      setError("BHK is required for Apartment and Villa property types");
+      setLoading(false);
+      return;
+    }
+
+    // Full name validation
+    if (form.fullName.length < 2) {
+      setError("Full Name must be at least 2 characters");
+      setLoading(false);
+      return;
+    }
+
+    // Phone validation
+    if (form.phone.length < 10 || form.phone.length > 15) {
+      setError("Phone number must be between 10 and 15 digits");
       setLoading(false);
       return;
     }
@@ -98,625 +119,400 @@ export default function NewBuyerForm() {
         <div style={{ 
           background: "linear-gradient(135deg, #0070f3 0%, #0051a2 100%)", 
           color: "white", 
-          padding: "30px",
+          padding: "24px",
           textAlign: "center"
         }}>
-          <h1 style={{ 
-            margin: 0, 
-            fontSize: "28px", 
-            fontWeight: "600",
-            textShadow: "0 2px 4px rgba(0,0,0,0.2)"
-          }}>
-             New Buyer Registration
+          <h1 style={{ margin: "0", fontSize: "28px", fontWeight: "600" }}>
+            Create New Buyer Lead
           </h1>
-          <p style={{ 
-            margin: "8px 0 0 0", 
-            fontSize: "16px", 
-            opacity: 0.9 
-          }}>
-            Add a new buyer lead to your system
+          <p style={{ margin: "8px 0 0 0", opacity: "0.9" }}>
+            Fill in the details to add a new buyer lead
           </p>
         </div>
 
         {/* Form Content */}
-        <div style={{ padding: "40px" }}>
-          
-          {/* Personal Information Section */}
-          <div style={{ marginBottom: "30px" }}>
-            <h3 style={{ 
-              color: "#0070f3", 
-              marginBottom: "20px", 
-              fontSize: "18px",
-              fontWeight: "600",
-              borderBottom: "2px solid #e9ecef",
-              paddingBottom: "8px"
-            }}>
-               Personal Information
-            </h3>
-            
+        <div style={{ padding: "32px" }}>
+          {message && (
             <div style={{ 
-              display: "grid", 
-              gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", 
-              gap: "20px" 
+              color: "green", 
+              background: "#f0f8f0", 
+              padding: "12px", 
+              borderRadius: "8px", 
+              marginBottom: "20px",
+              border: "1px solid #c3e6c3"
             }}>
-              <div>
-                <label style={{ 
-                  display: "block", 
-                  marginBottom: "8px", 
-                  fontSize: "14px", 
-                  fontWeight: "500",
-                  color: "#495057"
-                }}>
-                  Full Name *
-                </label>
-                <input 
-                  name="fullName" 
-                  type="text" 
-                  value={form.fullName} 
-                  onChange={handleChange}
-                  required
-                  style={{ 
-                    width: "100%", 
-                    padding: "12px 16px", 
-                    border: "2px solid #e9ecef", 
-                    borderRadius: "8px",
-                    fontSize: "16px",
-                    transition: "border-color 0.3s ease",
-                    outline: "none"
-                  }}
-                  onFocus={(e) => e.target.style.borderColor = "#0070f3"}
-                  onBlur={(e) => e.target.style.borderColor = "#e9ecef"}
-                />
-              </div>
-
-              <div>
-                <label style={{ 
-                  display: "block", 
-                  marginBottom: "8px", 
-                  fontSize: "14px", 
-                  fontWeight: "500",
-                  color: "#495057"
-                }}>
-                  Email
-                </label>
-                <input 
-                  name="email" 
-                  type="email" 
-                  value={form.email} 
-                  onChange={handleChange}
-                  style={{ 
-                    width: "100%", 
-                    padding: "12px 16px", 
-                    border: "2px solid #e9ecef", 
-                    borderRadius: "8px",
-                    fontSize: "16px",
-                    transition: "border-color 0.3s ease",
-                    outline: "none"
-                  }}
-                  onFocus={(e) => e.target.style.borderColor = "#0070f3"}
-                  onBlur={(e) => e.target.style.borderColor = "#e9ecef"}
-                />
-              </div>
-
-              <div>
-                <label style={{ 
-                  display: "block", 
-                  marginBottom: "8px", 
-                  fontSize: "14px", 
-                  fontWeight: "500",
-                  color: "#495057"
-                }}>
-                  Phone *
-                </label>
-                <input 
-                  name="phone" 
-                  type="text" 
-                  value={form.phone} 
-                  onChange={handleChange}
-                  required
-                  style={{ 
-                    width: "100%", 
-                    padding: "12px 16px", 
-                    border: "2px solid #e9ecef", 
-                    borderRadius: "8px",
-                    fontSize: "16px",
-                    transition: "border-color 0.3s ease",
-                    outline: "none"
-                  }}
-                  onFocus={(e) => e.target.style.borderColor = "#0070f3"}
-                  onBlur={(e) => e.target.style.borderColor = "#e9ecef"}
-                />
-              </div>
+              {message}
             </div>
-          </div>
+          )}
 
-          {/* Property Information Section */}
-          <div style={{ marginBottom: "30px" }}>
-            <h3 style={{ 
-              color: "#0070f3", 
-              marginBottom: "20px", 
-              fontSize: "18px",
-              fontWeight: "600",
-              borderBottom: "2px solid #e9ecef",
-              paddingBottom: "8px"
-            }}>
-               Property Information
-            </h3>
-            
+          {error && (
             <div style={{ 
-              display: "grid", 
-              gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", 
-              gap: "20px" 
+              color: "red", 
+              background: "#ffe6e6", 
+              padding: "12px", 
+              borderRadius: "8px", 
+              marginBottom: "20px",
+              border: "1px solid #ffb3b3"
             }}>
-              <div>
-                <label style={{ 
-                  display: "block", 
-                  marginBottom: "8px", 
-                  fontSize: "14px", 
-                  fontWeight: "500",
-                  color: "#495057"
-                }}>
-                  City *
-                </label>
-                <select 
-                  name="city" 
-                  value={form.city} 
-                  onChange={handleChange}
-                  style={{ 
-                    width: "100%", 
-                    padding: "12px 16px", 
-                    border: "2px solid #e9ecef", 
-                    borderRadius: "8px",
-                    fontSize: "16px",
-                    background: "white",
-                    transition: "border-color 0.3s ease",
-                    outline: "none"
-                  }}
-                  onFocus={(e) => e.target.style.borderColor = "#0070f3"}
-                  onBlur={(e) => e.target.style.borderColor = "#e9ecef"}
-                >
-                  <option value="Chandigarh">Chandigarh</option>
-                  <option value="Mohali">Mohali</option>
-                  <option value="Zirakpur">Zirakpur</option>
-                  <option value="Panchkula">Panchkula</option>
-                  <option value="Other">Other</option>
-                </select>
-              </div>
-
-              <div>
-                <label style={{ 
-                  display: "block", 
-                  marginBottom: "8px", 
-                  fontSize: "14px", 
-                  fontWeight: "500",
-                  color: "#495057"
-                }}>
-                  Property Type *
-                </label>
-                <select 
-                  name="propertyType" 
-                  value={form.propertyType} 
-                  onChange={handleChange}
-                  style={{ 
-                    width: "100%", 
-                    padding: "12px 16px", 
-                    border: "2px solid #e9ecef", 
-                    borderRadius: "8px",
-                    fontSize: "16px",
-                    background: "white",
-                    transition: "border-color 0.3s ease",
-                    outline: "none"
-                  }}
-                  onFocus={(e) => e.target.style.borderColor = "#0070f3"}
-                  onBlur={(e) => e.target.style.borderColor = "#e9ecef"}
-                >
-                  <option value="Apartment">Apartment</option>
-                  <option value="Villa">Villa</option>
-                  <option value="Plot">Plot</option>
-                  <option value="Office">Office</option>
-                  <option value="Retail">Retail</option>
-                </select>
-              </div>
-
-              <div>
-                <label style={{ 
-                  display: "block", 
-                  marginBottom: "8px", 
-                  fontSize: "14px", 
-                  fontWeight: "500",
-                  color: "#495057"
-                }}>
-                  BHK
-                </label>
-                <select 
-                  name="bhk" 
-                  value={form.bhk} 
-                  onChange={handleChange}
-                  style={{ 
-                    width: "100%", 
-                    padding: "12px 16px", 
-                    border: "2px solid #e9ecef", 
-                    borderRadius: "8px",
-                    fontSize: "16px",
-                    background: "white",
-                    transition: "border-color 0.3s ease",
-                    outline: "none"
-                  }}
-                  onFocus={(e) => e.target.style.borderColor = "#0070f3"}
-                  onBlur={(e) => e.target.style.borderColor = "#e9ecef"}
-                >
-                  <option value="Studio">Studio</option>
-                  <option value="One">One</option>
-                  <option value="Two">Two</option>
-                  <option value="Three">Three</option>
-                  <option value="Four">Four</option>
-                </select>
-              </div>
-
-              <div>
-                <label style={{ 
-                  display: "block", 
-                  marginBottom: "8px", 
-                  fontSize: "14px", 
-                  fontWeight: "500",
-                  color: "#495057"
-                }}>
-                  Purpose *
-                </label>
-                <select 
-                  name="purpose" 
-                  value={form.purpose} 
-                  onChange={handleChange}
-                  style={{ 
-                    width: "100%", 
-                    padding: "12px 16px", 
-                    border: "2px solid #e9ecef", 
-                    borderRadius: "8px",
-                    fontSize: "16px",
-                    background: "white",
-                    transition: "border-color 0.3s ease",
-                    outline: "none"
-                  }}
-                  onFocus={(e) => e.target.style.borderColor = "#0070f3"}
-                  onBlur={(e) => e.target.style.borderColor = "#e9ecef"}
-                >
-                  <option value="Buy">Buy</option>
-                  <option value="Rent">Rent</option>
-                </select>
-              </div>
+              {error}
             </div>
-          </div>
+          )}
 
-          {/* Budget Section */}
-          <div style={{ marginBottom: "30px" }}>
-            <h3 style={{ 
-              color: "#0070f3", 
-              marginBottom: "20px", 
-              fontSize: "18px",
-              fontWeight: "600",
-              borderBottom: "2px solid #e9ecef",
-              paddingBottom: "8px"
-            }}>
-               Budget Information
-            </h3>
-            
-            <div style={{ 
-              display: "grid", 
-              gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", 
-              gap: "20px" 
-            }}>
-              <div>
-                <label style={{ 
-                  display: "block", 
-                  marginBottom: "8px", 
-                  fontSize: "14px", 
-                  fontWeight: "500",
-                  color: "#495057"
-                }}>
-                  Budget Min (?)
-                </label>
-                <input 
-                  name="budgetMin" 
-                  type="number" 
-                  value={form.budgetMin} 
-                  onChange={handleChange}
-                  placeholder="e.g., 500000"
-                  style={{ 
-                    width: "100%", 
-                    padding: "12px 16px", 
-                    border: "2px solid #e9ecef", 
-                    borderRadius: "8px",
-                    fontSize: "16px",
-                    transition: "border-color 0.3s ease",
-                    outline: "none"
-                  }}
-                  onFocus={(e) => e.target.style.borderColor = "#0070f3"}
-                  onBlur={(e) => e.target.style.borderColor = "#e9ecef"}
-                />
-              </div>
-
-              <div>
-                <label style={{ 
-                  display: "block", 
-                  marginBottom: "8px", 
-                  fontSize: "14px", 
-                  fontWeight: "500",
-                  color: "#495057"
-                }}>
-                  Budget Max (?)
-                </label>
-                <input 
-                  name="budgetMax" 
-                  type="number" 
-                  value={form.budgetMax} 
-                  onChange={handleChange}
-                  placeholder="e.g., 1000000"
-                  style={{ 
-                    width: "100%", 
-                    padding: "12px 16px", 
-                    border: "2px solid #e9ecef", 
-                    borderRadius: "8px",
-                    fontSize: "16px",
-                    transition: "border-color 0.3s ease",
-                    outline: "none"
-                  }}
-                  onFocus={(e) => e.target.style.borderColor = "#0070f3"}
-                  onBlur={(e) => e.target.style.borderColor = "#e9ecef"}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Additional Information Section */}
-          <div style={{ marginBottom: "30px" }}>
-            <h3 style={{ 
-              color: "#0070f3", 
-              marginBottom: "20px", 
-              fontSize: "18px",
-              fontWeight: "600",
-              borderBottom: "2px solid #e9ecef",
-              paddingBottom: "8px"
-            }}>
-               Additional Information
-            </h3>
-            
-            <div style={{ 
-              display: "grid", 
-              gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", 
-              gap: "20px" 
-            }}>
-              <div>
-                <label style={{ 
-                  display: "block", 
-                  marginBottom: "8px", 
-                  fontSize: "14px", 
-                  fontWeight: "500",
-                  color: "#495057"
-                }}>
-                  Timeline *
-                </label>
-                <select 
-                  name="timeline" 
-                  value={form.timeline} 
-                  onChange={handleChange}
-                  style={{ 
-                    width: "100%", 
-                    padding: "12px 16px", 
-                    border: "2px solid #e9ecef", 
-                    borderRadius: "8px",
-                    fontSize: "16px",
-                    background: "white",
-                    transition: "border-color 0.3s ease",
-                    outline: "none"
-                  }}
-                  onFocus={(e) => e.target.style.borderColor = "#0070f3"}
-                  onBlur={(e) => e.target.style.borderColor = "#e9ecef"}
-                >
-                  <option value="M0_3m">0-3 months</option>
-                  <option value="M3_6m">3-6 months</option>
-                  <option value="MoreThan6m">More than 6 months</option>
-                  <option value="Exploring">Exploring</option>
-                </select>
-              </div>
-
-              <div>
-                <label style={{ 
-                  display: "block", 
-                  marginBottom: "8px", 
-                  fontSize: "14px", 
-                  fontWeight: "500",
-                  color: "#495057"
-                }}>
-                  Source *
-                </label>
-                <select 
-                  name="source" 
-                  value={form.source} 
-                  onChange={handleChange}
-                  style={{ 
-                    width: "100%", 
-                    padding: "12px 16px", 
-                    border: "2px solid #e9ecef", 
-                    borderRadius: "8px",
-                    fontSize: "16px",
-                    background: "white",
-                    transition: "border-color 0.3s ease",
-                    outline: "none"
-                  }}
-                  onFocus={(e) => e.target.style.borderColor = "#0070f3"}
-                  onBlur={(e) => e.target.style.borderColor = "#e9ecef"}
-                >
-                  <option value="Website">Website</option>
-                  <option value="Referral">Referral</option>
-                  <option value="Walk_in">Walk-in</option>
-                  <option value="Call">Call</option>
-                  <option value="Other">Other</option>
-                </select>
-              </div>
-              <div>
-                <label style={{ 
-                  display: "block", 
-                  marginBottom: "8px", 
-                  fontSize: "14px", 
-                  fontWeight: "500",
-                  color: "#495057"
-                }}>
-                  Status *
-                </label>
-                <select 
-                  name="status" 
-                  value={form.status} 
-                  onChange={handleChange}
-                  style={{ 
-                    width: "100%", 
-                    padding: "12px 16px", 
-                    border: "2px solid #e9ecef", 
-                    borderRadius: "8px",
-                    fontSize: "16px",
-                    background: "white",
-                    transition: "border-color 0.3s ease",
-                    outline: "none"
-                  }}
-                  onFocus={(e) => e.target.style.borderColor = "#0070f3"}
-                  onBlur={(e) => e.target.style.borderColor = "#e9ecef"}
-                >
-                  <option value="New">New</option>
-                  <option value="Qualified">Qualified</option>
-                  <option value="Contacted">Contacted</option>
-                  <option value="Visited">Visited</option>
-                  <option value="Negotiation">Negotiation</option>
-                  <option value="Converted">Converted</option>
-                  <option value="Dropped">Dropped</option>
-                </select>
-              </div>
+          <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }} style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
+            <div>
+              <label style={{ display: "block", marginBottom: "8px", fontWeight: "500", color: "#333" }}>
+                Full Name *
+              </label>
+              <input
+                name="fullName"
+                type="text"
+                value={form.fullName}
+                onChange={handleChange}
+                required
+                minLength={2}
+                maxLength={80}
+                style={{ 
+                  width: "100%", 
+                  padding: "12px", 
+                  border: "2px solid #e1e5e9", 
+                  borderRadius: "8px",
+                  fontSize: "16px",
+                  transition: "border-color 0.2s"
+                }}
+                onFocus={(e) => e.target.style.borderColor = "#0070f3"}
+                onBlur={(e) => e.target.style.borderColor = "#e1e5e9"}
+              />
             </div>
 
-            <div style={{ marginTop: "20px" }}>
-              <label style={{ 
-                display: "block", 
-                marginBottom: "8px", 
-                fontSize: "14px", 
-                fontWeight: "500",
-                color: "#495057"
-              }}>
+            <div>
+              <label style={{ display: "block", marginBottom: "8px", fontWeight: "500", color: "#333" }}>
+                Email
+              </label>
+              <input
+                name="email"
+                type="email"
+                value={form.email}
+                onChange={handleChange}
+                style={{ 
+                  width: "100%", 
+                  padding: "12px", 
+                  border: "2px solid #e1e5e9", 
+                  borderRadius: "8px",
+                  fontSize: "16px",
+                  transition: "border-color 0.2s"
+                }}
+                onFocus={(e) => e.target.style.borderColor = "#0070f3"}
+                onBlur={(e) => e.target.style.borderColor = "#e1e5e9"}
+              />
+            </div>
+
+            <div>
+              <label style={{ display: "block", marginBottom: "8px", fontWeight: "500", color: "#333" }}>
+                Phone *
+              </label>
+              <input
+                name="phone"
+                type="text"
+                value={form.phone}
+                onChange={handleChange}
+                required
+                minLength={10}
+                maxLength={15}
+                pattern="[0-9]{10,15}"
+                style={{ 
+                  width: "100%", 
+                  padding: "12px", 
+                  border: "2px solid #e1e5e9", 
+                  borderRadius: "8px",
+                  fontSize: "16px",
+                  transition: "border-color 0.2s"
+                }}
+                onFocus={(e) => e.target.style.borderColor = "#0070f3"}
+                onBlur={(e) => e.target.style.borderColor = "#e1e5e9"}
+              />
+            </div>
+
+            <div>
+              <label style={{ display: "block", marginBottom: "8px", fontWeight: "500", color: "#333" }}>
+                City *
+              </label>
+              <select
+                name="city"
+                value={form.city}
+                onChange={handleChange}
+                style={{ 
+                  width: "100%", 
+                  padding: "12px", 
+                  border: "2px solid #e1e5e9", 
+                  borderRadius: "8px",
+                  fontSize: "16px",
+                  transition: "border-color 0.2s"
+                }}
+                onFocus={(e) => e.target.style.borderColor = "#0070f3"}
+                onBlur={(e) => e.target.style.borderColor = "#e1e5e9"}
+              >
+                <option value="Chandigarh">Chandigarh</option>
+                <option value="Mohali">Mohali</option>
+                <option value="Zirakpur">Zirakpur</option>
+                <option value="Panchkula">Panchkula</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+
+            <div>
+              <label style={{ display: "block", marginBottom: "8px", fontWeight: "500", color: "#333" }}>
+                Property Type *
+              </label>
+              <select
+                name="propertyType"
+                value={form.propertyType}
+                onChange={handleChange}
+                style={{ 
+                  width: "100%", 
+                  padding: "12px", 
+                  border: "2px solid #e1e5e9", 
+                  borderRadius: "8px",
+                  fontSize: "16px",
+                  transition: "border-color 0.2s"
+                }}
+                onFocus={(e) => e.target.style.borderColor = "#0070f3"}
+                onBlur={(e) => e.target.style.borderColor = "#e1e5e9"}
+              >
+                <option value="Apartment">Apartment</option>
+                <option value="Villa">Villa</option>
+                <option value="Plot">Plot</option>
+                <option value="Office">Office</option>
+                <option value="Retail">Retail</option>
+              </select>
+            </div>
+
+            <div>
+              <label style={{ display: "block", marginBottom: "8px", fontWeight: "500", color: "#333" }}>
+                BHK {(form.propertyType === "Apartment" || form.propertyType === "Villa") && <span style={{ color: "red" }}>*</span>}
+              </label>
+              <select
+                name="bhk"
+                value={form.bhk}
+                onChange={handleChange}
+                style={{ 
+                  width: "100%", 
+                  padding: "12px", 
+                  border: "2px solid #e1e5e9", 
+                  borderRadius: "8px",
+                  fontSize: "16px",
+                  transition: "border-color 0.2s"
+                }}
+                onFocus={(e) => e.target.style.borderColor = "#0070f3"}
+                onBlur={(e) => e.target.style.borderColor = "#e1e5e9"}
+              >
+                <option value="Studio">Studio</option>
+                <option value="One">One</option>
+                <option value="Two">Two</option>
+                <option value="Three">Three</option>
+                <option value="Four">Four</option>
+              </select>
+            </div>
+
+            <div>
+              <label style={{ display: "block", marginBottom: "8px", fontWeight: "500", color: "#333" }}>
+                Purpose *
+              </label>
+              <select
+                name="purpose"
+                value={form.purpose}
+                onChange={handleChange}
+                style={{ 
+                  width: "100%", 
+                  padding: "12px", 
+                  border: "2px solid #e1e5e9", 
+                  borderRadius: "8px",
+                  fontSize: "16px",
+                  transition: "border-color 0.2s"
+                }}
+                onFocus={(e) => e.target.style.borderColor = "#0070f3"}
+                onBlur={(e) => e.target.style.borderColor = "#e1e5e9"}
+              >
+                <option value="Buy">Buy</option>
+                <option value="Rent">Rent</option>
+              </select>
+            </div>
+
+            <div>
+              <label style={{ display: "block", marginBottom: "8px", fontWeight: "500", color: "#333" }}>
+                Timeline *
+              </label>
+              <select
+                name="timeline"
+                value={form.timeline}
+                onChange={handleChange}
+                style={{ 
+                  width: "100%", 
+                  padding: "12px", 
+                  border: "2px solid #e1e5e9", 
+                  borderRadius: "8px",
+                  fontSize: "16px",
+                  transition: "border-color 0.2s"
+                }}
+                onFocus={(e) => e.target.style.borderColor = "#0070f3"}
+                onBlur={(e) => e.target.style.borderColor = "#e1e5e9"}
+              >
+                <option value="M0_3m">0-3 months</option>
+                <option value="M3_6m">3-6 months</option>
+                <option value="MoreThan6m">More than 6 months</option>
+                <option value="Exploring">Exploring</option>
+              </select>
+            </div>
+
+            <div>
+              <label style={{ display: "block", marginBottom: "8px", fontWeight: "500", color: "#333" }}>
+                Source *
+              </label>
+              <select
+                name="source"
+                value={form.source}
+                onChange={handleChange}
+                style={{ 
+                  width: "100%", 
+                  padding: "12px", 
+                  border: "2px solid #e1e5e9", 
+                  borderRadius: "8px",
+                  fontSize: "16px",
+                  transition: "border-color 0.2s"
+                }}
+                onFocus={(e) => e.target.style.borderColor = "#0070f3"}
+                onBlur={(e) => e.target.style.borderColor = "#e1e5e9"}
+              >
+                <option value="Website">Website</option>
+                <option value="Referral">Referral</option>
+                <option value="Walk_in">Walk-in</option>
+                <option value="Call">Call</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+
+            <div>
+              <label style={{ display: "block", marginBottom: "8px", fontWeight: "500", color: "#333" }}>
+                Budget Min (INR)
+              </label>
+              <input
+                name="budgetMin"
+                type="number"
+                value={form.budgetMin}
+                onChange={handleChange}
+                min="0"
+                style={{ 
+                  width: "100%", 
+                  padding: "12px", 
+                  border: "2px solid #e1e5e9", 
+                  borderRadius: "8px",
+                  fontSize: "16px",
+                  transition: "border-color 0.2s"
+                }}
+                onFocus={(e) => e.target.style.borderColor = "#0070f3"}
+                onBlur={(e) => e.target.style.borderColor = "#e1e5e9"}
+              />
+            </div>
+
+            <div>
+              <label style={{ display: "block", marginBottom: "8px", fontWeight: "500", color: "#333" }}>
+                Budget Max (INR)
+              </label>
+              <input
+                name="budgetMax"
+                type="number"
+                value={form.budgetMax}
+                onChange={handleChange}
+                min="0"
+                style={{ 
+                  width: "100%", 
+                  padding: "12px", 
+                  border: "2px solid #e1e5e9", 
+                  borderRadius: "8px",
+                  fontSize: "16px",
+                  transition: "border-color 0.2s"
+                }}
+                onFocus={(e) => e.target.style.borderColor = "#0070f3"}
+                onBlur={(e) => e.target.style.borderColor = "#e1e5e9"}
+              />
+            </div>
+
+            <div style={{ gridColumn: "1 / -1" }}>
+              <label style={{ display: "block", marginBottom: "8px", fontWeight: "500", color: "#333" }}>
                 Notes
               </label>
-              <textarea 
-                name="notes" 
-                value={form.notes} 
+              <textarea
+                name="notes"
+                value={form.notes}
                 onChange={handleChange}
-                placeholder="Additional notes about the buyer..."
+                maxLength={1000}
                 rows={4}
                 style={{ 
                   width: "100%", 
-                  padding: "12px 16px", 
-                  border: "2px solid #e9ecef", 
+                  padding: "12px", 
+                  border: "2px solid #e1e5e9", 
                   borderRadius: "8px",
                   fontSize: "16px",
-                  resize: "vertical",
-                  transition: "border-color 0.3s ease",
-                  outline: "none",
-                  fontFamily: "inherit"
+                  transition: "border-color 0.2s",
+                  resize: "vertical"
                 }}
                 onFocus={(e) => e.target.style.borderColor = "#0070f3"}
-                onBlur={(e) => e.target.style.borderColor = "#e9ecef"}
+                onBlur={(e) => e.target.style.borderColor = "#e1e5e9"}
               />
             </div>
-          </div>
 
-          {/* Messages */}
-          {error && (
-            <div style={{ 
-              background: "#f8d7da", 
-              color: "#721c24", 
-              padding: "15px", 
-              borderRadius: "8px", 
-              border: "1px solid #f5c6cb",
-              marginBottom: "20px",
-              fontSize: "14px"
-            }}>
-               {error}
+            <div style={{ gridColumn: "1 / -1", display: "flex", gap: "16px", justifyContent: "center", marginTop: "20px" }}>
+              <button
+                type="submit"
+                disabled={loading}
+                style={{
+                  padding: "16px 32px",
+                  background: loading ? "#ccc" : "linear-gradient(135deg, #0070f3 0%, #0051a2 100%)",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "8px",
+                  cursor: loading ? "not-allowed" : "pointer",
+                  fontSize: "16px",
+                  fontWeight: "600",
+                  transition: "all 0.2s",
+                  minWidth: "150px"
+                }}
+                onMouseOver={(e) => !loading && (e.target.style.transform = "translateY(-2px)")}
+                onMouseOut={(e) => !loading && (e.target.style.transform = "translateY(0)")}
+              >
+                {loading ? "Creating..." : "Create Buyer"}
+              </button>
+              
+              <Link 
+                href="/buyers"
+                style={{
+                  padding: "16px 32px",
+                  background: "transparent",
+                  color: "#0070f3",
+                  border: "2px solid #0070f3",
+                  borderRadius: "8px",
+                  textDecoration: "none",
+                  fontSize: "16px",
+                  fontWeight: "600",
+                  transition: "all 0.2s",
+                  minWidth: "150px",
+                  textAlign: "center",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center"
+                }}
+                onMouseOver={(e) => {
+                  e.target.style.background = "#0070f3";
+                  e.target.style.color = "white";
+                }}
+                onMouseOut={(e) => {
+                  e.target.style.background = "transparent";
+                  e.target.style.color = "#0070f3";
+                }}
+              >
+                Cancel
+              </Link>
             </div>
-          )}
-          
-          {message && (
-            <div style={{ 
-              background: "#d4edda", 
-              color: "#155724", 
-              padding: "15px", 
-              borderRadius: "8px", 
-              border: "1px solid #c3e6cb",
-              marginBottom: "20px",
-              fontSize: "14px"
-            }}>
-               {message}
-            </div>
-          )}
-
-          {/* Action Buttons */}
-          <div style={{ 
-            display: "flex", 
-            gap: "15px", 
-            justifyContent: "center",
-            marginTop: "30px"
-          }}>
-            <Link 
-              href="/buyers"
-              style={{
-                padding: "12px 24px",
-                background: "#6c757d",
-                color: "white",
-                textDecoration: "none",
-                borderRadius: "8px",
-                fontWeight: "500",
-                fontSize: "16px",
-                cursor: "pointer",
-                transition: "all 0.3s ease",
-                border: "none"
-              }}
-              onMouseOver={(e) => {
-                e.currentTarget.style.background = "#5a6268";
-                e.currentTarget.style.transform = "translateY(-2px)";
-              }}
-              onMouseOut={(e) => {
-                e.currentTarget.style.background = "#6c757d";
-                e.currentTarget.style.transform = "translateY(0)";
-              }}
-            >
-               Back to Dashboard
-            </Link>
-            
-            <button 
-              onClick={handleSubmit}
-              disabled={loading}
-              style={{
-                padding: "12px 32px",
-                background: loading ? "#6c757d" : "linear-gradient(135deg, #28a745 0%, #20c997 100%)",
-                color: "white",
-                border: "none",
-                borderRadius: "8px",
-                fontWeight: "500",
-                fontSize: "16px",
-                cursor: loading ? "not-allowed" : "pointer",
-                transition: "all 0.3s ease",
-                boxShadow: "0 4px 15px rgba(40, 167, 69, 0.3)"
-              }}
-              onMouseOver={(e) => {
-                if (!loading) {
-                  e.currentTarget.style.transform = "translateY(-2px)";
-                  e.currentTarget.style.boxShadow = "0 6px 20px rgba(40, 167, 69, 0.4)";
-                }
-              }}
-              onMouseOut={(e) => {
-                if (!loading) {
-                  e.currentTarget.style.transform = "translateY(0)";
-                  e.currentTarget.style.boxShadow = "0 4px 15px rgba(40, 167, 69, 0.3)";
-                }
-              }}
-            >
-              {loading ? " Creating..." : " Add Buyer"}
-            </button>
-          </div>
+          </form>
         </div>
       </div>
     </div>

@@ -1,4 +1,4 @@
-// app/api/buyers/import/route.ts
+﻿// app/api/buyers/import/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
@@ -6,19 +6,17 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
 const buyerSchema = z.object({
-  fullName: z.string().min(1),
-  email: z.string().email(),
-  phone: z.string().min(10),
+  fullName: z.string().min(2, "Full Name must be at least 2 characters").max(80, "Full Name must be at most 80 characters"),
+  email: z.string().email("Invalid email format").optional().or(z.literal("")),
+  phone: z.string().min(10, "Phone number must be at least 10 digits").max(15, "Phone number must be at most 15 digits"),
   city: z.enum(["Chandigarh", "Mohali", "Zirakpur", "Panchkula", "Other"]),
   propertyType: z.enum(["Apartment", "Villa", "Plot", "Office", "Retail"]),
-  bhk: z.string().optional(),
-  purpose: z.string().optional(),
-  budgetMin: z.number().nonnegative().optional(),
-  budgetMax: z.number().nonnegative().optional(),
-  timeline: z.string(),
-  source: z.string().optional(),
-  notes: z.string().optional(),
-  tags: z.string().optional(), // Keep as string for CSV parsing
+  bhk: z.enum(["Studio", "One", "Two", "Three", "Four"]).optional(),
+  purpose: z.enum(["Buy", "Rent"]),
+  budgetMin: z.number().min(0, "Budget must be non-negative").optional(),
+  budgetMax: z.number().min(0, "Budget must be non-negative").optional(),
+  timeline: z.enum(["M0_3m", "M3_6m", "MoreThan6m", "Exploring"]),
+  source: z.enum(["Website", "Referral", "Walk_in", "Call", "Other"]),
   status: z.enum([
     "New",
     "Qualified",
@@ -28,12 +26,21 @@ const buyerSchema = z.object({
     "Converted",
     "Dropped",
   ]),
+  notes: z.string().max(1000, "Notes must be at most 1000 characters").optional(),
+  tags: z.string().optional(), // Keep as string for CSV parsing
 }).refine((data) => {
   if (data.budgetMin !== undefined && data.budgetMax !== undefined) {
     return data.budgetMax >= data.budgetMin;
   }
   return true;
-}, { message: "budgetMax should be >= budgetMin" });
+}, { message: "budgetMax should be >= budgetMin" })
+.refine((data) => {
+  // BHK is required for Apartment and Villa property types
+  if ((data.propertyType === "Apartment" || data.propertyType === "Villa") && !data.bhk) {
+    return false;
+  }
+  return true;
+}, { message: "BHK is required for Apartment and Villa property types" });
 
 // POST handler
 export async function POST(req: NextRequest) {

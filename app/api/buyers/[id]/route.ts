@@ -1,11 +1,11 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { buyerSchema } from "@/lib/validations/buyer";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
 
-// ✅ GET buyer by ID
+//  GET buyer by ID
 // GET buyer by ID with last 5 history
 export async function GET(
   req: Request,
@@ -39,7 +39,7 @@ export async function GET(
 }
 
 
-// PATCH buyer by ID
+// PATCH buyer by ID with concurrency control
 export async function PATCH(
   req: Request,
   { params }: { params: { id: string } }
@@ -51,9 +51,10 @@ export async function PATCH(
 
   try {
     const body = await req.json();
+    const { updatedAt: clientUpdatedAt, ...updateData } = body;
 
     // Validate input with Zod (partial update allowed)
-    const parsed = buyerSchema.partial().parse(body);
+    const parsed = buyerSchema.partial().parse(updateData);
 
     // Fetch old buyer
     const oldBuyer = await prisma.buyer.findUnique({ where: { id: params.id } });
@@ -66,6 +67,23 @@ export async function PATCH(
     const isAdmin = session.user.role === "ADMIN";
     if (!isOwner && !isAdmin) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    // Concurrency control: check if record was modified since client loaded it
+    if (clientUpdatedAt) {
+      const clientTime = new Date(clientUpdatedAt).getTime();
+      const serverTime = new Date(oldBuyer.updatedAt).getTime();
+      
+      if (clientTime < serverTime) {
+        return NextResponse.json(
+          { 
+            error: "Record changed", 
+            message: "This record has been modified by another user. Please refresh the page and try again.",
+            code: "CONCURRENCY_CONFLICT"
+          }, 
+          { status: 409 }
+        );
+      }
     }
 
     // Update buyer

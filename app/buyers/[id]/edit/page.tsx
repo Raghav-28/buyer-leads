@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
@@ -134,6 +134,13 @@ export default function EditBuyerPage() {
       return;
     }
 
+    // BHK validation for Apartment and Villa
+    if ((form.propertyType === "Apartment" || form.propertyType === "Villa") && !form.bhk) {
+      setError("BHK is required for Apartment and Villa property types");
+      setSaving(false);
+      return;
+    }
+
     try {
       const res = await fetch(`/api/buyers/${buyerId}`, {
         method: "PATCH",
@@ -142,12 +149,16 @@ export default function EditBuyerPage() {
           ...form,
           budgetMin: isNaN(budgetMin) ? undefined : budgetMin,
           budgetMax: isNaN(budgetMax) ? undefined : budgetMax,
+          updatedAt: buyer?.updatedAt, // Include updatedAt for concurrency control
         }),
       });
 
       const data = await res.json();
       if (!res.ok) {
-        if (res.status === 403) {
+        if (res.status === 409) {
+          // Concurrency conflict
+          setError(data.message || "This record has been modified by another user. Please refresh the page and try again.");
+        } else if (res.status === 403) {
           setError("You don't have permission to edit this buyer");
         } else {
           setError(data.error || "Failed to update buyer");
@@ -183,7 +194,7 @@ export default function EditBuyerPage() {
         <h1>Error</h1>
         <p style={{ color: "red" }}>{error}</p>
         <Link href="/buyers" style={{ color: "#0070f3" }}>
-          ← Back to Buyers
+           Back to Buyers
         </Link>
       </div>
     );
@@ -193,7 +204,7 @@ export default function EditBuyerPage() {
     <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "20px" }}>
       <div style={{ marginBottom: "20px" }}>
         <Link href="/buyers" style={{ color: "#0070f3", textDecoration: "none" }}>
-          ← Back to Buyers
+           Back to Buyers
         </Link>
         <h1>Edit Buyer: {buyer?.fullName}</h1>
       </div>
@@ -226,6 +237,9 @@ export default function EditBuyerPage() {
           )}
 
           <form onSubmit={handleSubmit} style={{ display: "grid", gridTemplateColumns: "1fr", gap: "16px" }}>
+            {/* Hidden field for concurrency control */}
+            <input type="hidden" name="updatedAt" value={buyer?.updatedAt || ""} />
+            
             <div>
               <label>
                 Full Name:
@@ -235,6 +249,8 @@ export default function EditBuyerPage() {
                   value={form.fullName}
                   onChange={handleChange}
                   required
+                  minLength={2}
+                  maxLength={80}
                   style={{ width: "100%", padding: "8px", marginTop: "4px" }}
                 />
               </label>
@@ -262,6 +278,9 @@ export default function EditBuyerPage() {
                   value={form.phone}
                   onChange={handleChange}
                   required
+                  minLength={10}
+                  maxLength={15}
+                  pattern="[0-9]{10,15}"
                   style={{ width: "100%", padding: "8px", marginTop: "4px" }}
                 />
               </label>
@@ -364,6 +383,7 @@ export default function EditBuyerPage() {
                   type="number"
                   value={form.budgetMin}
                   onChange={handleChange}
+                  min="0"
                   style={{ width: "100%", padding: "8px", marginTop: "4px" }}
                 />
               </label>
@@ -377,6 +397,7 @@ export default function EditBuyerPage() {
                   type="number"
                   value={form.budgetMax}
                   onChange={handleChange}
+                  min="0"
                   style={{ width: "100%", padding: "8px", marginTop: "4px" }}
                 />
               </label>
@@ -394,7 +415,7 @@ export default function EditBuyerPage() {
                   <option value="M0_3m">0-3 months</option>
                   <option value="M3_6m">3-6 months</option>
                   <option value="MoreThan6m">More than 6 months</option>
-                  <option value="Exploring">Just exploring</option>
+                  <option value="Exploring">Exploring</option>
                 </select>
               </label>
             </div>
@@ -424,6 +445,7 @@ export default function EditBuyerPage() {
                   name="notes"
                   value={form.notes}
                   onChange={handleChange}
+                  maxLength={1000}
                   rows={4}
                   style={{ width: "100%", padding: "8px", marginTop: "4px" }}
                 />
@@ -470,7 +492,7 @@ export default function EditBuyerPage() {
                     <div key={field} style={{ marginBottom: "4px" }}>
                       <strong>{field}:</strong> 
                       <span style={{ color: "#dc3545" }}> {change.old}</span> 
-                      <span> → </span>
+                      <span>  </span>
                       <span style={{ color: "#28a745" }}>{change.new}</span>
                     </div>
                   ))}
