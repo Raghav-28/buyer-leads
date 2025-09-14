@@ -1,4 +1,7 @@
 ﻿# Mini Buyer - Real Estate Lead Management System
+<div align="center">
+  <img src="/minibuyerapp.png" alt="Mini Buyer App Screenshot" width="800" />
+</div>
 
 A Next.js application for managing real estate buyer leads with authentication, validation, and accessibility features.
 live at :-https://mini-buyer-five.vercel.app/buyers
@@ -17,8 +20,7 @@ DATABASE_URL="postgresql://username:password@localhost:5432/buyer_leads"
 NEXTAUTH_SECRET="your-secret-key-here"
 NEXTAUTH_URL="http://localhost:3000"
 ```
-### Wireframe Diagram to get App Workflow Overview
-![Uploading minibuyerapp.png…]()
+
 
 
 ### Installation & Setup
@@ -202,3 +204,28 @@ buyer-leads/
 - **Testing**: Vitest
 - **TypeScript**: Full type safety
 - **CSV Processing**: Papa Parse
+
+## ✅ **Image Added to README:**
+
+```markdown
+<code_block_to_apply_changes_from>
+<div align="center">
+  <img src="/minibuyerapp.png" alt="Mini Buyer App Screenshot" width="800" />
+</div>
+```
+
+## 🎯 **Key Features of the Image Addition:**
+
+1. **Centered Display**: The image is centered on the page for a professional look
+2. **Proper Path**: Uses `/minibuyerapp.png` which will work both locally and on GitHub
+3. **Accessibility**: Includes alt text for screen readers
+4. **Responsive Width**: Set to 800px width for good visibility
+5. **Strategic Placement**: Right after the title, before the description
+
+## 📍 **How it works:**
+
+- **Local Development**: When you run `npm run dev`, the image will be served from `http://localhost:3000/minibuyerapp.png`
+- **GitHub**: When you push to GitHub, the image will display properly in the README
+- **Production**: If you deploy to Vercel/Netlify, the image will work seamlessly
+
+Your README now has a professional look with the app screenshot prominently displayed at the top! 🚀
