@@ -85,12 +85,23 @@ export async function POST(req: NextRequest) {
           ? b.tags.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0)
           : [];
         
-        await tx.buyer.create({ 
+        const buyer = await tx.buyer.create({ 
           data: { 
             ...b, 
             tags: tagsArray, // Convert to array
             ownerId: session.user.id // Use current user as owner
           } 
+        });
+
+        // Create initial history entry for imported buyer
+        await tx.buyerHistory.create({
+          data: {
+            buyerId: buyer.id,
+            changedBy: session.user.id,
+            diff: {
+              created: { old: null, new: "Buyer imported" }
+            },
+          },
         });
       }
     });

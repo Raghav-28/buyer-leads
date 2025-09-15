@@ -32,6 +32,10 @@ type HistoryItem = {
   changedBy: string;
   changedAt: string;
   diff: Record<string, { old: any; new: any }>;
+  changedByUser?: {
+    name: string | null;
+    email: string;
+  } | null;
 };
 
 export default function EditBuyerPage() {
@@ -85,13 +89,14 @@ export default function EditBuyerPage() {
         }
 
         setBuyer(data);
+        const isResidential = data.propertyType === "Apartment" || data.propertyType === "Villa";
         setForm({
           fullName: data.fullName || "",
           email: data.email || "",
           phone: data.phone || "",
           city: data.city || "Chandigarh",
           propertyType: data.propertyType || "Apartment",
-          bhk: data.bhk || "One",
+          bhk: isResidential ? (data.bhk || "One") : "",
           purpose: data.purpose || "Buy",
           budgetMin: data.budgetMin?.toString() || "",
           budgetMax: data.budgetMax?.toString() || "",
@@ -112,7 +117,20 @@ export default function EditBuyerPage() {
   }, [session, status, buyerId, router]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    
+    // Clear BHK when property type changes to non-residential
+    if (name === "propertyType") {
+      const isResidential = value === "Apartment" || value === "Villa";
+      setForm({ 
+        ...form, 
+        [name]: value,
+        bhk: isResidential ? (form.bhk || "One") : ""
+      });
+    } else {
+      setForm({ ...form, [name]: value });
+    }
+    
     setError("");
     setMessage("");
   };
@@ -338,13 +356,16 @@ export default function EditBuyerPage() {
 
             <div>
               <label>
-                BHK:
+                BHK {(form.propertyType === "Apartment" || form.propertyType === "Villa") && <span style={{ color: "red" }}>*</span>}:
                 <select
                   name="bhk"
                   value={form.bhk}
                   onChange={handleChange}
                   style={{ width: "100%", padding: "8px", marginTop: "4px" }}
                 >
+                  {(form.propertyType !== "Apartment" && form.propertyType !== "Villa") && (
+                    <option value="">Not applicable</option>
+                  )}
                   <option value="Studio">Studio</option>
                   <option value="One">One</option>
                   <option value="Two">Two</option>
@@ -501,6 +522,11 @@ export default function EditBuyerPage() {
                 }}>
                   <div style={{ fontSize: "12px", color: "#666", marginBottom: "8px" }}>
                     {new Date(item.changedAt).toLocaleString()}
+                    {item.changedByUser && (
+                      <span style={{ marginLeft: "8px", fontWeight: "500" }}>
+                        by {item.changedByUser.name || item.changedByUser.email}
+                      </span>
+                    )}
                   </div>
                   {Object.entries(item.diff).map(([field, change]) => (
                     <div key={field} style={{ marginBottom: "4px" }}>

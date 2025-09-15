@@ -31,7 +31,21 @@ export async function GET(
       take: 5,
     });
 
-    return NextResponse.json({ ...buyer, history });
+    // Get user information for each history entry
+    const historyWithUsers = await Promise.all(
+      history.map(async (item) => {
+        const user = await prisma.user.findUnique({
+          where: { id: item.changedBy },
+          select: { name: true, email: true },
+        });
+        return {
+          ...item,
+          changedByUser: user,
+        };
+      })
+    );
+
+    return NextResponse.json({ ...buyer, history: historyWithUsers });
   } catch (error) {
     console.error("GET error:", error);
     return NextResponse.json({ error: "Error fetching buyer" }, { status: 500 });

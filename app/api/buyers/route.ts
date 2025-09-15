@@ -40,6 +40,17 @@ export async function POST(request: Request) {
       },
     });
 
+    // Create initial history entry for new buyer
+    await prisma.buyerHistory.create({
+      data: {
+        buyerId: buyer.id,
+        changedBy: session.user.id,
+        diff: {
+          created: { old: null, new: "Buyer created" }
+        },
+      },
+    });
+
     return NextResponse.json(buyer, { status: 201 });
   } catch (error: any) {
     console.error("POST /buyers error:", error);

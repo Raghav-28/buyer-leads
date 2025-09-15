@@ -9,6 +9,10 @@ type HistoryItem = {
   changedBy: string;
   changedAt: string;
   diff: Record<string, { old: any; new: any }>;
+  changedByUser?: {
+    name: string | null;
+    email: string;
+  } | null;
 };
 
 type Buyer = {
@@ -326,7 +330,7 @@ export default function BuyerDetailPage() {
           }}
         >
           <p>
-            <strong>Changed by:</strong> {h.changedBy} | <strong>At:</strong>{" "}
+            <strong>Changed by:</strong> {h.changedByUser?.name || h.changedByUser?.email || h.changedBy} | <strong>At:</strong>{" "}
             {new Date(h.changedAt).toLocaleString()}
           </p>
           <ul>

@@ -10,7 +10,7 @@ export default function NewBuyerForm() {
     phone: "",
     city: "Chandigarh",
     propertyType: "Apartment",
-    bhk: "One",
+    bhk: "One", // Default for Apartment
     purpose: "Buy",
     budgetMin: "",
     budgetMax: "",
@@ -25,7 +25,20 @@ export default function NewBuyerForm() {
   const [loading, setLoading] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    
+    // Clear BHK when property type changes to non-residential
+    if (name === "propertyType") {
+      const isResidential = value === "Apartment" || value === "Villa";
+      setForm({ 
+        ...form, 
+        [name]: value,
+        bhk: isResidential ? (form.bhk || "One") : ""
+      });
+    } else {
+      setForm({ ...form, [name]: value });
+    }
+    
     setError(""); // clear error on change
     setMessage("");
   };
@@ -80,7 +93,7 @@ export default function NewBuyerForm() {
         phone: "",
         city: "Chandigarh",
         propertyType: "Apartment",
-        bhk: "One",
+        bhk: "One", // Default for Apartment
         purpose: "Buy",
         budgetMin: "",
         budgetMax: "",
@@ -305,6 +318,9 @@ export default function NewBuyerForm() {
                 onFocus={(e) => e.target.style.borderColor = "#0070f3"}
                 onBlur={(e) => e.target.style.borderColor = "#e1e5e9"}
               >
+                {(form.propertyType !== "Apartment" && form.propertyType !== "Villa") && (
+                  <option value="">Not applicable</option>
+                )}
                 <option value="Studio">Studio</option>
                 <option value="One">One</option>
                 <option value="Two">Two</option>
@@ -476,8 +492,8 @@ export default function NewBuyerForm() {
                   transition: "all 0.2s",
                   minWidth: "150px"
                 }}
-                onMouseOver={(e) => !loading && (e.target.style.transform = "translateY(-2px)")}
-                onMouseOut={(e) => !loading && (e.target.style.transform = "translateY(0)")}
+                onMouseOver={(e) => !loading && ((e.target as HTMLButtonElement).style.transform = "translateY(-2px)")}
+                onMouseOut={(e) => !loading && ((e.target as HTMLButtonElement).style.transform = "translateY(0)")}
               >
                 {loading ? "Creating..." : "Create Buyer"}
               </button>
@@ -501,12 +517,12 @@ export default function NewBuyerForm() {
                   justifyContent: "center"
                 }}
                 onMouseOver={(e) => {
-                  e.target.style.background = "#0070f3";
-                  e.target.style.color = "white";
+                  (e.target as HTMLElement).style.background = "#0070f3";
+                  (e.target as HTMLElement).style.color = "white";
                 }}
                 onMouseOut={(e) => {
-                  e.target.style.background = "transparent";
-                  e.target.style.color = "#0070f3";
+                  (e.target as HTMLElement).style.background = "transparent";
+                  (e.target as HTMLElement).style.color = "#0070f3";
                 }}
               >
                 Cancel
