@@ -1,6 +1,6 @@
 ﻿import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { buyerSchema } from "@/lib/validations/buyer";
+import { buyerSchema, buyerUpdateSchema } from "@/lib/validations/buyer";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
@@ -54,7 +54,7 @@ export async function PATCH(
     const { updatedAt: clientUpdatedAt, ...updateData } = body;
 
     // Validate input with Zod (partial update allowed)
-    const parsed = buyerSchema.partial().parse(updateData);
+    const parsed = buyerUpdateSchema.parse(updateData);
 
     // Fetch old buyer
     const oldBuyer = await prisma.buyer.findUnique({ where: { id: params.id } });

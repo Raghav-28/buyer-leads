@@ -134,6 +134,20 @@ export default function EditBuyerPage() {
       return;
     }
 
+    // Full name validation
+    if (form.fullName.length < 2) {
+      setError("Full Name must be at least 2 characters");
+      setSaving(false);
+      return;
+    }
+
+    // Phone validation
+    if (form.phone.length < 10 || form.phone.length > 15) {
+      setError("Phone number must be between 10 and 15 digits");
+      setSaving(false);
+      return;
+    }
+
     // BHK validation for Apartment and Villa
     if ((form.propertyType === "Apartment" || form.propertyType === "Villa") && !form.bhk) {
       setError("BHK is required for Apartment and Villa property types");
