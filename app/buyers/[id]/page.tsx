@@ -336,7 +336,10 @@ export default function BuyerDetailPage() {
           <ul>
             {Object.entries(h.diff).map(([field, change]) => (
               <li key={field}>
-                <strong>{field}:</strong> {change.old} → {change.new}
+                <strong>{field}:</strong> 
+                <span style={{ color: "#dc3545" }}> "{change.old || '(empty)'}"</span> 
+                <span style={{ margin: "0 8px", color: "#666" }}>→</span>
+                <span style={{ color: "#28a745" }}>"{change.new || '(empty)'}"</span>
               </li>
             ))}
           </ul>

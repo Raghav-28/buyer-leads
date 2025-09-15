@@ -531,9 +531,9 @@ export default function EditBuyerPage() {
                   {Object.entries(item.diff).map(([field, change]) => (
                     <div key={field} style={{ marginBottom: "4px" }}>
                       <strong>{field}:</strong> 
-                      <span style={{ color: "#dc3545" }}> {change.old}</span> 
-                      <span>  </span>
-                      <span style={{ color: "#28a745" }}>{change.new}</span>
+                      <span style={{ color: "#dc3545" }}> "{change.old || '(empty)'}"</span> 
+                      <span style={{ margin: "0 8px", color: "#666" }}>→</span>
+                      <span style={{ color: "#28a745" }}>"{change.new || '(empty)'}"</span>
                     </div>
                   ))}
                 </div>
